@@ -1,5 +1,8 @@
 mod manifest;
 
+use crate::git;
+
+use semver::Version;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
@@ -9,22 +12,24 @@ pub struct Workspace {
 
 #[derive(Debug)]
 pub struct Package {
+    /// Package name
     name: String,
-    version: String,
+
+    /// Version listed in the manifest file
+    manifest_version: Version,
+
+    /// Path on disk
     path: PathBuf,
 }
 
 impl Workspace {
-    pub fn new() -> Workspace {
-        Workspace {
-            members: vec![],
-        }
-    }
-
+    /// Load a workspace from manifest files
     pub fn load(root: &Path) -> Workspace {
         let manifest = manifest::Manifest::load(root);
 
-        let mut workspace = Workspace::new();
+        let mut workspace = Workspace {
+            members: vec![],
+        };
 
         if let Some(manifest_workspace) = manifest.workspace {
             let members = match manifest_workspace.members {
@@ -50,7 +55,7 @@ impl Workspace {
 
                 workspace.members.push(Package {
                     name,
-                    version: package.version.unwrap(),
+                    manifest_version: package.version.unwrap(),
                     path: path.canonicalize().unwrap(),
                 });
             }
@@ -66,5 +71,30 @@ impl Workspace {
         }
 
         workspace
+    }
+
+    pub fn members(&self) -> &[Package] {
+        &self.members[..]
+    }
+}
+
+impl Package {
+    /// Return the package name
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn manifest_version(&self) -> &Version {
+        &self.manifest_version
+    }
+
+    pub fn has_changelog(&self) -> bool {
+        self.path.join("CHANGELOG.md").exists()
+    }
+
+    pub fn unpublished(&self, repository: &git::Repository) {
+        let tag = format!("{}-{}", self.name, self.manifest_version);
+
+        assert!(repository.tags().contains(&tag), "tag = {}", tag);
     }
 }

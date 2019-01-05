@@ -1,3 +1,4 @@
+use semver::Version;
 use serde_derive::Deserialize;
 use toml;
 
@@ -15,7 +16,7 @@ pub struct Manifest {
 #[derive(Debug, Deserialize)]
 pub struct Package {
     pub name: Option<String>,
-    pub version: Option<String>,
+    pub version: Option<Version>,
 }
 
 #[derive(Debug, Deserialize)]

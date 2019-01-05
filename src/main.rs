@@ -1,11 +1,12 @@
 use clap::{Arg, App, SubCommand};
-use git2::Repository;
 
 use std::path::Path;
 
 const PATH: &str = "/Users/carllerche/Code/Tokio/tokio";
 // const PATH: &str = "/Users/carllerche/Code/Tokio/mio";
 
+mod cargo;
+mod git;
 mod workspace;
 
 fn main() {
@@ -26,19 +27,21 @@ fn main() {
     println!("{:?}", matches);
 
     let workspace = workspace::Workspace::load(Path::new(PATH));
-    println!("{:#?}", workspace);
 
     /*
-    let repo = match Repository::open("/Users/carllerche/Code/Tokio/tokio") {
-        Ok(repo) => repo,
-        Err(e) => panic!("failed to open: {}", e),
-    };
-
-    let mut walk = repo.revwalk().unwrap();
-    walk.push_range("tokio-0.1.13..origin/master").unwrap();
-
-    for res in walk {
-        println!("{:?}", res.unwrap());
+    for member in workspace.members() {
+        let is_published = cargo::is_published(member);
+        println!(" + {} ({}); published = {:?}", member.name(), member.version(), is_published);
     }
     */
+
+    println!("===============");
+
+    let repository = git::Repository::open(Path::new(PATH));
+
+    for member in workspace.members() {
+        if member.has_changelog() {
+            member.unpublished(&repository);
+        }
+    }
 }
