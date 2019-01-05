@@ -1,4 +1,4 @@
-use crate::workspace::Package;
+use crate::package::Package;
 
 use semver::Version;
 use serde_derive::Deserialize;

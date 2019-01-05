@@ -7,6 +7,8 @@ const PATH: &str = "/Users/carllerche/Code/Tokio/tokio";
 
 mod cargo;
 mod git;
+mod manifest;
+mod package;
 mod workspace;
 
 fn main() {
