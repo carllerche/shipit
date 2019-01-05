@@ -3,6 +3,24 @@ use crate::workspace::Package;
 use semver::Version;
 use serde_derive::Deserialize;
 
+pub fn published_versions(name: &str) -> Vec<Version> {
+    // Compute the URL
+    let url = crates_index_url(name);
+
+    let body = reqwest::get(&url).unwrap()
+        .text().unwrap();
+
+    body.lines()
+        .map(|line| {
+            let published: PublishedPackage =
+                serde_json::from_str(line).unwrap();
+
+            published.vers
+        })
+        .collect()
+}
+
+/*
 /// Returns the most recent version published to crates.io
 pub fn is_published(package: &Package) -> bool {
     // Compute the URL
@@ -21,6 +39,7 @@ pub fn is_published(package: &Package) -> bool {
 
     false
 }
+*/
 
 fn crates_index_url(name: &str) -> String {
     format!(
