@@ -5,11 +5,17 @@ use std::path::Path;
 const PATH: &str = "/Users/carllerche/Code/Tokio/tokio";
 // const PATH: &str = "/Users/carllerche/Code/Tokio/mio";
 
+mod action;
 mod cargo;
+mod changelog;
+mod config;
 mod git;
 mod manifest;
 mod package;
 mod workspace;
+
+use crate::config::Config;
+use crate::workspace::Workspace;
 
 fn main() {
     let matches = App::new("Ship It!")
@@ -18,6 +24,10 @@ fn main() {
         .subcommand({
             SubCommand::with_name("check")
                 .about("Check for project compliance")
+        })
+        .subcommand({
+            SubCommand::with_name("init")
+                .about("Initialize a project for shipit")
         })
         .subcommand({
             SubCommand::with_name("status")
@@ -42,8 +52,10 @@ fn main() {
     let repository = git::Repository::open(Path::new(PATH));
 
     for member in workspace.members() {
+        /*
         if member.has_changelog() {
             member.unpublished(&repository);
         }
+        */
     }
 }

@@ -11,8 +11,10 @@ pub struct Package {
     /// Version listed in the manifest file
     manifest_version: Version,
 
+    /*
     /// Versions published to crates.io
     published_versions: Vec<Version>,
+    */
 
     /// Path on disk
     path: PathBuf,
@@ -25,12 +27,12 @@ impl Package {
         let manifest_version = manifest.version.unwrap();
 
         // Fetch all versions published to crates.io
-        let published_versions = cargo::published_versions(&name);
+        // let published_versions = cargo::published_versions(&name);
 
         Package {
             name,
             manifest_version,
-            published_versions,
+            // published_versions,
             path: path.canonicalize().unwrap(),
         }
     }
@@ -44,10 +46,13 @@ impl Package {
         &self.manifest_version
     }
 
+    /*
     pub fn has_changelog(&self) -> bool {
         self.path.join("CHANGELOG.md").exists()
     }
+    */
 
+    /*
     pub fn unpublished(&self, repository: &git::Repository) {
         if self.published_versions.is_empty() {
             // TODO: Ensure tag missing
@@ -60,4 +65,5 @@ impl Package {
                 "tag = {}; published = {:?}",
                 tag, self.published_versions);
     }
+    */
 }
