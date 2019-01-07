@@ -8,15 +8,26 @@ use std::path::{Path, PathBuf};
 #[derive(Debug)]
 pub struct Workspace {
     members: Vec<Package>,
+
+    root: PathBuf,
 }
 
 impl Workspace {
+    pub fn members(&self) -> &[Package] {
+        &self.members[..]
+    }
+
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
     /// Load a workspace from manifest files
     pub fn load(root: &Path) -> Workspace {
         let manifest = manifest::Manifest::load(root);
 
         let mut workspace = Workspace {
             members: vec![],
+            root: root.into(),
         };
 
         if let Some(manifest_workspace) = manifest.workspace {
@@ -55,9 +66,5 @@ impl Workspace {
         }
 
         workspace
-    }
-
-    pub fn members(&self) -> &[Package] {
-        &self.members[..]
     }
 }

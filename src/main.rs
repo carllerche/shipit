@@ -35,27 +35,26 @@ fn main() {
         })
         .get_matches();
 
-    println!("Hello world!");
-    println!("{:?}", matches);
+    println!("matches = {:?}", matches);
 
-    let workspace = workspace::Workspace::load(Path::new(PATH));
+    let root = Path::new(PATH);
 
-    /*
-    for member in workspace.members() {
-        let is_published = cargo::is_published(member);
-        println!(" + {} ({}); published = {:?}", member.name(), member.version(), is_published);
-    }
-    */
+    let workspace = Workspace::load(root);
+    let config = Config::load(&workspace);
 
-    println!("===============");
+    match matches.subcommand() {
+        ("check", Some(sub_matches)) => {
 
-    let repository = git::Repository::open(Path::new(PATH));
-
-    for member in workspace.members() {
-        /*
-        if member.has_changelog() {
-            member.unpublished(&repository);
+            action::check(&workspace, &config);
         }
-        */
+        ("init", Some(sub_matches)) => {
+            unimplemented!();
+        }
+        ("status", Some(sub_matches)) => {
+            unimplemented!();
+        }
+        _ => {
+            unimplemented!();
+        }
     }
 }

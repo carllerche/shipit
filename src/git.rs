@@ -1,4 +1,7 @@
+use crate::config::TagFormat;
+
 use git2;
+use semver::Version;
 
 use std::path::Path;
 
@@ -27,6 +30,17 @@ impl Repository {
 
     pub fn tags(&self) -> &[String] {
         &self.tags[..]
+    }
+}
+
+pub fn tag_for(name: &str, version: &Version, format: TagFormat) -> String {
+    match format {
+        TagFormat::VersionOnly => {
+            format!("v{}", version)
+        }
+        TagFormat::NameVersion => {
+            format!("{}-{}", name, version)
+        }
     }
 }
 
