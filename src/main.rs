@@ -35,8 +35,6 @@ fn main() {
         })
         .get_matches();
 
-    println!("matches = {:?}", matches);
-
     let root = Path::new(PATH);
 
     let workspace = Workspace::load(root);
@@ -44,11 +42,20 @@ fn main() {
 
     match matches.subcommand() {
         ("check", Some(sub_matches)) => {
-
-            action::check(&workspace, &config);
+            action::check(&workspace, &config.unwrap());
         }
         ("init", Some(sub_matches)) => {
-            unimplemented!();
+            let config = match config {
+                Ok(config) => Some(config),
+                Err(ref err) if err.is_not_found() => {
+                    None
+                }
+                Err(_) => {
+                    unimplemented!();
+                }
+            };
+
+            action::init(&workspace, config.as_ref());
         }
         ("status", Some(sub_matches)) => {
             unimplemented!();

@@ -1,6 +1,10 @@
 //! Changelog parser
 
+pub const DEFAULT_FILE_NAME: &str = "CHANGELOG.md";
+
+/*
 use std::path::Path;
+
 
 /// Changelog file
 #[derive(Debug)]
@@ -43,3 +47,4 @@ pub fn load(path: &Path, config: &Config) -> Changelog {
 
 impl Changelog {
 }
+*/
