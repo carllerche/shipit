@@ -1,5 +1,6 @@
 use crate::package::Package;
 
+use reqwest::StatusCode;
 use semver::Version;
 use serde_derive::Deserialize;
 
@@ -7,8 +8,13 @@ pub fn published_versions(name: &str) -> Vec<Version> {
     // Compute the URL
     let url = crates_index_url(name);
 
-    let body = reqwest::get(&url).unwrap()
-        .text().unwrap();
+    let mut response = reqwest::get(&url).unwrap();
+
+    if response.status() == StatusCode::NOT_FOUND {
+        return vec![];
+    }
+
+    let body = response.text().unwrap();
 
     body.lines()
         .map(|line| {
