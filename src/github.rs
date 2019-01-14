@@ -31,7 +31,7 @@ impl Client {
         Client { http }
     }
 
-    pub fn prs(&self) {
+    pub fn prs(&self) -> Vec<Pull> {
         let pulls: Vec<Pull> = self
             .http
             .get("https://api.github.com/repos/carllerche/h2/pulls?state=closed")
@@ -40,7 +40,6 @@ impl Client {
             .json()
             .unwrap();
 
-        println!("body = {:#?}", pulls);
-        // pulls
+        pulls
     }
 }
