@@ -17,9 +17,6 @@ impl Client {
     pub fn new() -> Client {
         use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
         let mut authentication = HeaderMap::new();
-        // let token = format!("token {}", "dda5c2fe7e0c2da2ad91da6322970b496fb113d9")
-        //     .parse()
-        //     .unwrap();
 
         authentication.insert(
             HeaderName::from_static("token"),

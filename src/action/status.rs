@@ -204,15 +204,11 @@ WORKSPACE STRUCTURE
 
 /// Check a workspace, ensuring it is valid
 pub fn run(workspace: &Workspace, config: &Config) {
-    println!("aaaaaaaaaaa");
     let github = github::Client::new();
-    println!("a2a2a2a2a2a2a2a2a2a2a2");
     let pulls = github.prs();
-    println!("a3a3a3a3a3a3a3a3a3a3a3, {:?}", &pulls);
     // if true {
     //     panic!()
     // }
-    println!("bbbbbbbbbbb");
     let repository = git::Repository::open(workspace.root());
 
     let zero_one_zero = Version {
@@ -224,7 +220,6 @@ pub fn run(workspace: &Workspace, config: &Config) {
     };
 
     for member in workspace.members() {
-        println!("ccccccccccc");
         let config = &config.packages[member.name()];
 
         let mut published = cargo::published_versions(member.name());
@@ -235,11 +230,9 @@ pub fn run(workspace: &Workspace, config: &Config) {
 
         // Sort versions. The latest version is last.
         published.sort();
-        println!("ddddddddddd");
         if let Some(tag_format) = config.tag_format {
             for version in &published {
                 let tag = git::tag_for(member.name(), version, tag_format);
-                println!("eeeeeeeeeee ===> {}", &tag);
                 if !repository.tags().contains(&tag) && *version >= zero_one_zero {
                     panic!("missing tag `{}`", tag);
                 }

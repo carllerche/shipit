@@ -27,19 +27,11 @@ fn main() {
         .subcommand({ SubCommand::with_name("status").about("Show the release status") })
         .get_matches();
 
-    // println!("matches == {:?}", &matches);
-    println!("11111111111");
-
     let root = Path::new(PATH);
-
-    println!("22222222222");
 
     let workspace = Workspace::load(root);
 
-    println!("33333333333");
     let config = Config::load(&workspace);
-
-    println!("44444444444");
 
     match matches.subcommand() {
         ("check", Some(sub_matches)) => {
@@ -57,7 +49,6 @@ fn main() {
             action::init::run(&workspace, config.as_ref());
         }
         ("status", Some(sub_matches)) => {
-            println!("KSHDJHDJSAH JSHHSA DJHSAD JHSDKJ");
             action::status::run(&workspace, &config.unwrap());
         }
         _ => {
