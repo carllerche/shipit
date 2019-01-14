@@ -10,6 +10,7 @@ mod cargo;
 mod changelog;
 mod config;
 mod git;
+mod github;
 mod manifest;
 mod package;
 mod workspace;
@@ -42,7 +43,7 @@ fn main() {
 
     match matches.subcommand() {
         ("check", Some(sub_matches)) => {
-            action::check(&workspace, &config.unwrap());
+            action::check::run(&workspace, &config.unwrap());
         }
         ("init", Some(sub_matches)) => {
             let config = match config {
@@ -55,10 +56,10 @@ fn main() {
                 }
             };
 
-            action::init(&workspace, config.as_ref());
+            action::init::run(&workspace, config.as_ref());
         }
         ("status", Some(sub_matches)) => {
-            unimplemented!();
+            action::status::run(&workspace, &config.unwrap());
         }
         _ => {
             unimplemented!();

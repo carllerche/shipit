@@ -2,12 +2,18 @@ use crate::config::TagFormat;
 
 use git2;
 use semver::Version;
+use url::{Url, Host};
 
 use std::path::Path;
 
 pub struct Repository {
+    /// Git repository handle
     inner: git2::Repository,
+
+    /// Repository tags
     tags: Vec<String>,
+
+    origin_url: Url,
 }
 
 impl Repository {
@@ -22,14 +28,60 @@ impl Repository {
             .filter_map(|name| name.map(|s| s.to_string()))
             .collect();
 
+        let origin_url = {
+            let origin = inner.find_remote("origin").unwrap();
+            let url = Url::parse(origin.url().unwrap()).unwrap();
+
+            // Only github origins are supported.
+            assert_eq!(url.host(), Some(Host::Domain("github.com")));
+
+            url
+        };
+
         Repository {
             inner,
             tags,
+            origin_url,
         }
     }
 
     pub fn tags(&self) -> &[String] {
         &self.tags[..]
+    }
+
+    pub fn origin_url(&self) -> &Url {
+        &self.origin_url
+    }
+
+    /// TODO: Make branch configurable
+    pub fn wut(&self) -> Result<(), Box<::std::error::Error>> {
+        let mut walk = self.inner.revwalk().unwrap();
+        walk.push_ref("refs/remotes/origin/master");
+
+        println!("~~~ iter");
+
+        // Walk all the commits looking for the first release commit that
+        // includes....
+        for res in walk {
+            let oid = res?;
+            /*
+            let oid = match res {
+                Ok(v) => v,
+                Err(_) => unimplemented!(),
+            };
+
+            let before = self.inner.find_tree(commit).unwrap();
+            let after = self.inner.find_tree(first).unwrap();
+
+            let diff = self.inner.diff_tree_to_tree(Some(&before), Some(&after), None)
+                .unwrap();
+
+            diff.foreach(
+            */
+        }
+
+        println!("~~~ done");
+        Ok(())
     }
 }
 

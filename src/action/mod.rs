@@ -1,5 +1,3 @@
-mod check;
-mod init;
-
-pub use self::check::check;
-pub use self::init::init;
+pub mod check;
+pub mod init;
+pub mod status;

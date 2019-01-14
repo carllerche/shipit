@@ -6,7 +6,7 @@ use crate::Workspace;
 
 use semver::Version;
 
-pub fn init(workspace: &Workspace, config: Option<&Config>) {
+pub fn run(workspace: &Workspace, config: Option<&Config>) {
     if config.is_some() {
         let path = workspace.root().join(config::DEFAULT_FILE_NAME);
         panic!("{} already exists", path.display());
