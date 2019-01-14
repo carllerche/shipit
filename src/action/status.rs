@@ -1,29 +1,227 @@
-use crate::{Workspace, Config};
 use crate::cargo;
 use crate::git;
 use crate::github;
 use crate::package;
+use crate::{Config, Workspace};
 
 use semver::Version;
+
+/**
+WORKSPACE STRUCTURE
+{
+    members:
+        [
+        Package {
+            name: "tokio",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 14,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio"
+        },
+        Package {
+            name: "tokio-async-await",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 5,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-async-await"
+        },
+        Package {
+            name: "tokio-buf",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 0,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-buf"
+        },
+        Package {
+            name: "tokio-channel",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 0,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-channel"
+        },
+        Package {
+            name: "tokio-codec",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 1,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-codec"
+        },
+        Package {
+            name: "tokio-current-thread",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 4,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-current-thread"
+        },
+        Package {
+            name: "tokio-executor",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 6,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-executor"
+        },
+        Package {
+            name: "tokio-fs",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 5,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-fs"
+        },
+        Package {
+            name: "tokio-io",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 11,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-io"
+        },
+        Package {
+            name: "tokio-reactor",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 8,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-reactor"
+        },
+        Package {
+            name: "tokio-signal",
+            manifest_version: Version {
+                major: 0,
+                minor: 2,
+                patch: 7,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-signal"
+        },
+        Package {
+            name: "tokio-threadpool",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 10,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-threadpool"
+        },
+        Package {
+            name: "tokio-timer",
+            manifest_version: Version {
+                major: 0,
+                minor: 2,
+                patch: 8,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-timer"
+        },
+        Package {
+            name: "tokio-tcp",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 3,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-tcp"
+        },
+        Package {
+            name: "tokio-tls",
+            manifest_version: Version {
+                major: 0,
+                minor: 2,
+                patch: 1,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-tls"
+        },
+        Package {
+            name: "tokio-udp",
+            manifest_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 3,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-udp"
+        },
+        Package {
+            name: "tokio-uds",
+            manifest_version: Version {
+                major: 0,
+                minor: 2,
+                patch: 5,
+                pre: [],
+                build: []
+            },
+            path: "/usr/local/var/foss/tokio/tokio-uds"
+        }],
+         root: "/usr/local/var/foss/tokio" }
+
+*/
 
 /// Check a workspace, ensuring it is valid
 pub fn run(workspace: &Workspace, config: &Config) {
     let github = github::Client::new();
     github.prs();
 
-    if true { panic!() }
-
+    if true {
+        panic!()
+    }
     let repository = git::Repository::open(workspace.root());
 
     let zero_one_zero = Version {
-       major: 0,
-       minor: 1,
-       patch: 0,
-       pre: vec![],
-       build: vec![],
+        major: 0,
+        minor: 1,
+        patch: 0,
+        pre: vec![],
+        build: vec![],
     };
 
     for member in workspace.members() {
+        println!("ccccccccccc");
         let config = &config.packages[member.name()];
 
         let mut published = cargo::published_versions(member.name());
