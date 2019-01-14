@@ -1,12 +1,12 @@
 use reqwest;
-use serde_derive::{Deserialize};
+use serde_derive::Deserialize;
 
 pub struct Client {
     http: reqwest::Client,
 }
 
 #[derive(Debug, Deserialize)]
-struct Pull {
+pub struct Pull {
     id: u64,
     url: String,
     title: String,
@@ -16,7 +16,7 @@ struct Pull {
 impl Client {
     pub fn new() -> Client {
         use reqwest::header::{self, HeaderMap};
-
+        println!("Client new, hello");
         let mut authentication = HeaderMap::new();
         let token = format!("token {}", "dda5c2fe7e0c2da2ad91da6322970b496fb113d9")
             .parse()
@@ -29,19 +29,18 @@ impl Client {
             .build()
             .unwrap();
 
-        Client {
-            http,
-        }
+        Client { http }
     }
 
     pub fn prs(&self) {
-        let pulls: Vec<Pull> =
-            self.http.get("https://api.github.com/repos/carllerche/h2/pulls?state=closed")
+        println!("YOYOYOYYYOYOYOYOYOYOYOYO");
+        let pulls: Vec<Pull> = self
+            .http
+            .get("https://api.github.com/repos/carllerche/h2/pulls?state=closed")
             .send()
-            .unwrap()
-            .json()
             .unwrap();
 
         println!("body = {:#?}", pulls);
+        // pulls
     }
 }
