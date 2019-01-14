@@ -15,14 +15,16 @@ pub struct Pull {
 
 impl Client {
     pub fn new() -> Client {
-        use reqwest::header::{self, HeaderMap};
-        println!("Client new, hello");
+        use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
         let mut authentication = HeaderMap::new();
-        let token = format!("token {}", "dda5c2fe7e0c2da2ad91da6322970b496fb113d9")
-            .parse()
-            .unwrap();
+        // let token = format!("token {}", "dda5c2fe7e0c2da2ad91da6322970b496fb113d9")
+        //     .parse()
+        //     .unwrap();
 
-        authentication.insert(header::AUTHORIZATION, token);
+        authentication.insert(
+            HeaderName::from_static("token"),
+            HeaderValue::from_static("dda5c2fe7e0c2da2ad91da6322970b496fb113d9"),
+        );
 
         let http = reqwest::ClientBuilder::new()
             .default_headers(authentication)
@@ -33,11 +35,12 @@ impl Client {
     }
 
     pub fn prs(&self) {
-        println!("YOYOYOYYYOYOYOYOYOYOYOYO");
         let pulls: Vec<Pull> = self
             .http
             .get("https://api.github.com/repos/carllerche/h2/pulls?state=closed")
             .send()
+            .unwrap()
+            .json()
             .unwrap();
 
         println!("body = {:#?}", pulls);
