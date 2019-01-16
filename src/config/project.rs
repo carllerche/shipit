@@ -57,6 +57,10 @@ impl Project {
         };
 
         for member in workspace.members() {
+            if !toml.packages.contains_key(member.name()) {
+                continue;
+            }
+
             project.packages.insert(
                 member.name().to_string(),
                 Package::load(member.name(), &toml));

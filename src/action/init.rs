@@ -27,7 +27,7 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
     }
 
     if workspace.members().len() == 1 {
-        let member = &workspace.members()[0];
+        let member = &workspace.members().next().unwrap();
 
         let mut published = cargo::published_versions(member.name());
         published.sort();

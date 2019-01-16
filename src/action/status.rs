@@ -30,18 +30,19 @@ pub fn run(workspace: &Workspace, config: &Config) {
     };
     */
 
-    for member in workspace.members() {
-        let config = &config.project.packages[member.name()];
+    for (name, package_config) in &config.project.packages {
+        let package = workspace.get_member(name).unwrap();
 
-        let mut published = cargo::published_versions(member.name());
+        let mut published = cargo::published_versions(name);
 
-        if let Some(init_version) = config.initial_managed_version.as_ref() {
+        if let Some(init_version) = package_config.initial_managed_version.as_ref() {
             published.retain(|version| version >= init_version);
         }
 
         // Sort versions. The latest version is last.
         published.sort();
-        if let Some(_tag_format) = config.tag_format {
+
+        if let Some(_tag_format) = package_config.tag_format {
             // for version in &published {
             //     let tag = git::tag_for(member.name(), version, tag_format);
             //     if !repository.tags().contains(&tag) && *version >= zero_one_zero {
@@ -50,7 +51,7 @@ pub fn run(workspace: &Workspace, config: &Config) {
             // }
             info!(log, "TODO: identify missing tags here")
         } else {
-            warn!(log, "NO TAGGING = {}", member.name());
+            warn!(log, "NO TAGGING = {}", name);
             // repository.wut();
         }
 
