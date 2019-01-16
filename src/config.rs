@@ -12,6 +12,12 @@ use std::path::{Path, PathBuf};
 /// Configures `shipit` behavior.
 #[derive(Debug, Default)]
 pub struct Config {
+    pub project: Project,
+}
+
+/// Project specific configuration specified by a `.shipit.yml` file.
+#[derive(Debug, Default)]
+pub struct Project {
     pub packages: HashMap<String, Package>,
 }
 
@@ -52,22 +58,22 @@ pub enum LoadError {
 
 pub const DEFAULT_FILE_NAME: &str = ".shipit.toml";
 
-impl Config {
-    pub fn load(workspace: &Workspace) -> Result<Config, LoadError> {
+impl Project {
+    pub fn load(workspace: &Workspace) -> Result<Project, LoadError> {
         let file = workspace.root().join(DEFAULT_FILE_NAME);
         let toml = load_file(&file)?;
 
-        let mut config = Config {
+        let mut project = Project {
             packages: HashMap::new(),
         };
 
         for member in workspace.members() {
-            config.packages.insert(
+            project.packages.insert(
                 member.name().to_string(),
                 Package::load(member.name(), &toml));
         }
 
-        Ok(config)
+        Ok(project)
     }
 
     pub fn write(&self, path: &Path) -> Result<(), Box<::std::error::Error>> {
@@ -127,7 +133,7 @@ impl Config {
 }
 
 impl Package {
-    fn load(name: &str, toml: &repr::Config) -> Package {
+    fn load(name: &str, toml: &repr::Project) -> Package {
         let package_toml = toml.packages.get(name);
 
         let initial_managed_version =
@@ -190,7 +196,7 @@ impl From<toml::de::Error> for LoadError {
     }
 }
 
-pub fn load_file(path: &Path) -> Result<repr::Config, LoadError> {
+pub fn load_file(path: &Path) -> Result<repr::Project, LoadError> {
     use std::fs::File;
     use std::io::prelude::*;
 
@@ -211,7 +217,7 @@ mod repr {
 
     /// Ship it TOML configuration representation
     #[derive(Debug, Deserialize)]
-    pub struct Config {
+    pub struct Project {
         /// Global git configuration values
         pub git: Option<Git>,
 

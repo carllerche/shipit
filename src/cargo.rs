@@ -1,5 +1,3 @@
-use crate::package::Package;
-
 use reqwest::StatusCode;
 use semver::Version;
 use serde_derive::Deserialize;

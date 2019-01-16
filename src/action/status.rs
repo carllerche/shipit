@@ -1,15 +1,12 @@
 use crate::cargo;
-use crate::git;
+use crate::config;
 use crate::github;
-use crate::package;
-use crate::{Config, Workspace};
-
-use semver::Version;
+use crate::Workspace;
 
 use slog::*;
 
 /// Check a workspace, ensuring it is valid
-pub fn run(workspace: &Workspace, config: &Config) {
+pub fn run(workspace: &Workspace, config: &config::Project) {
     let decorator = slog_term::TermDecorator::new().build();
     let drain = slog_term::FullFormat::new(decorator).build().fuse();
     let drain = slog_async::Async::new(drain).build().fuse();
@@ -22,6 +19,7 @@ pub fn run(workspace: &Workspace, config: &Config) {
         info!(log, "{:?}\n", pr);
     }
 
+    /*
     let repository = git::Repository::open(workspace.root());
 
     let zero_one_zero = Version {
@@ -31,6 +29,7 @@ pub fn run(workspace: &Workspace, config: &Config) {
         pre: vec![],
         build: vec![],
     };
+    */
 
     for member in workspace.members() {
         let config = &config.packages[member.name()];
@@ -43,7 +42,7 @@ pub fn run(workspace: &Workspace, config: &Config) {
 
         // Sort versions. The latest version is last.
         published.sort();
-        if let Some(tag_format) = config.tag_format {
+        if let Some(_tag_format) = config.tag_format {
             // for version in &published {
             //     let tag = git::tag_for(member.name(), version, tag_format);
             //     if !repository.tags().contains(&tag) && *version >= zero_one_zero {

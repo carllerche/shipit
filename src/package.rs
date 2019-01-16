@@ -1,4 +1,4 @@
-use crate::{cargo, git, manifest};
+use crate::manifest;
 
 use semver::Version;
 use std::path::{Path, PathBuf};

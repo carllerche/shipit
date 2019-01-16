@@ -1,8 +1,6 @@
-use crate::git;
 use crate::manifest;
 use crate::package::Package;
 
-use semver::Version;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]

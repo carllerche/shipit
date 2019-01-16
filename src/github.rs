@@ -15,7 +15,7 @@ pub struct Pull {
 
 impl Client {
     pub fn new() -> Client {
-        use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
+        use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
         let mut authentication = HeaderMap::new();
 
         authentication.insert(
