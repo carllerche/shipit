@@ -8,7 +8,7 @@ use semver::Version;
 
 pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
     if config.is_some() {
-        let path = workspace.root().join(config::DEFAULT_FILE_NAME);
+        let path = workspace.root().join(config::Project::DEFAULT_FILE_NAME);
         panic!("{} already exists", path.display());
     }
 
