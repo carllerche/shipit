@@ -20,17 +20,18 @@ fn main() {
         .version("0.1.0")
         .author("Carl Lerche <me@carllerche.com>")
         .arg(
-            Arg::with_name("INPUT")
-                .help("Path of the target project")
+            Arg::with_name("project-path")
+                .long("project")
+                .value_name("path")
+                .help("Path of the project root")
                 .required(true)
-                .index(1),
         )
         .subcommand({ SubCommand::with_name("check").about("Check for project compliance") })
         .subcommand({ SubCommand::with_name("init").about("Initialize a project for shipit") })
         .subcommand({ SubCommand::with_name("status").about("Show the release status") })
         .get_matches();
 
-    let path = matches.value_of("INPUT").unwrap();
+    let path = matches.value_of("project-path").unwrap();
     let root = Path::new(path);
     let workspace = Workspace::load(root);
     let config = config::Config::load(&workspace);
