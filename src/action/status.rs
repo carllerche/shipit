@@ -1,26 +1,35 @@
-use crate::{Workspace, Config};
 use crate::cargo;
 use crate::git;
 use crate::github;
 use crate::package;
+use crate::{Config, Workspace};
 
 use semver::Version;
 
+use slog::*;
+
 /// Check a workspace, ensuring it is valid
 pub fn run(workspace: &Workspace, config: &Config) {
-    let github = github::Client::new();
-    github.prs();
+    let decorator = slog_term::TermDecorator::new().build();
+    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
 
-    if true { panic!() }
+    let log = slog::Logger::root(drain, o!());
+    let github = github::Client::new();
+    let pulls = github.prs();
+
+    for pr in pulls.iter() {
+        info!(log, "{:?}\n", pr);
+    }
 
     let repository = git::Repository::open(workspace.root());
 
     let zero_one_zero = Version {
-       major: 0,
-       minor: 1,
-       patch: 0,
-       pre: vec![],
-       build: vec![],
+        major: 0,
+        minor: 1,
+        patch: 0,
+        pre: vec![],
+        build: vec![],
     };
 
     for member in workspace.members() {
@@ -34,17 +43,16 @@ pub fn run(workspace: &Workspace, config: &Config) {
 
         // Sort versions. The latest version is last.
         published.sort();
-
         if let Some(tag_format) = config.tag_format {
-            for version in &published {
-                let tag = git::tag_for(member.name(), version, tag_format);
-
-                if !repository.tags().contains(&tag) && *version >= zero_one_zero {
-                    panic!("missing tag `{}`", tag);
-                }
-            }
+            // for version in &published {
+            //     let tag = git::tag_for(member.name(), version, tag_format);
+            //     if !repository.tags().contains(&tag) && *version >= zero_one_zero {
+            //         panic!("missing tag `{}`", tag);
+            //     }
+            // }
+            info!(log, "TODO: identify missing tags here")
         } else {
-            println!("NO TAGGING = {}", member.name());
+            warn!(log, "NO TAGGING = {}", member.name());
             // repository.wut();
         }
 
