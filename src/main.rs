@@ -12,6 +12,7 @@ mod manifest;
 mod package;
 mod workspace;
 
+use crate::config::Config;
 use crate::workspace::Workspace;
 
 fn main() {
@@ -32,11 +33,11 @@ fn main() {
     let path = matches.value_of("INPUT").unwrap();
     let root = Path::new(path);
     let workspace = Workspace::load(root);
-    let config = config::Project::load(&workspace);
+    let config = config::Config::load(&workspace);
 
     match matches.subcommand() {
         ("check", Some(_sub_matches)) => {
-            action::check::run(&workspace, &config.unwrap());
+            action::check::run(&workspace, &config.unwrap().project);
         }
         ("init", Some(_sub_matches)) => {
             let config = match config {
@@ -47,7 +48,7 @@ fn main() {
                 }
             };
 
-            action::init::run(&workspace, config.as_ref());
+            action::init::run(&workspace, config.as_ref().map(|c| &c.project));
         }
         ("status", Some(_sub_matches)) => {
             action::status::run(&workspace, &config.unwrap());

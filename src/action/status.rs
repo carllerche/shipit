@@ -1,18 +1,17 @@
 use crate::cargo;
-use crate::config;
 use crate::github;
-use crate::Workspace;
+use crate::{Config, Workspace};
 
 use slog::*;
 
 /// Check a workspace, ensuring it is valid
-pub fn run(workspace: &Workspace, config: &config::Project) {
+pub fn run(workspace: &Workspace, config: &Config) {
     let decorator = slog_term::TermDecorator::new().build();
     let drain = slog_term::FullFormat::new(decorator).build().fuse();
     let drain = slog_async::Async::new(drain).build().fuse();
 
     let log = slog::Logger::root(drain, o!());
-    let github = github::Client::new();
+    let github = github::Client::new(&config.system);
     let pulls = github.prs();
 
     for pr in pulls.iter() {
@@ -32,7 +31,7 @@ pub fn run(workspace: &Workspace, config: &config::Project) {
     */
 
     for member in workspace.members() {
-        let config = &config.packages[member.name()];
+        let config = &config.project.packages[member.name()];
 
         let mut published = cargo::published_versions(member.name());
 

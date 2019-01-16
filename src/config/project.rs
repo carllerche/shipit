@@ -1,3 +1,5 @@
+use super::LoadError;
+
 use crate::changelog;
 use crate::Workspace;
 
@@ -42,11 +44,6 @@ const VERSION_ONLY: &str = "version";
 
 /// String representation of `TagFormat::NameVersion`.
 const NAME_VERSION: &str = "name-version";
-
-#[derive(Debug)]
-pub enum LoadError {
-    NotFound,
-}
 
 impl Project {
     pub const DEFAULT_FILE_NAME: &'static str = ".shipit.toml";
