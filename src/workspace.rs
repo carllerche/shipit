@@ -1,20 +1,23 @@
-use crate::git;
 use crate::manifest;
 use crate::package::Package;
 
-use semver::Version;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct Workspace {
-    members: Vec<Package>,
+    members: HashMap<String, Package>,
 
     root: PathBuf,
 }
 
 impl Workspace {
-    pub fn members(&self) -> &[Package] {
-        &self.members[..]
+    pub fn get_member(&self, name: &str) -> Option<&Package> {
+        self.members.get(name)
+    }
+
+    pub fn members(&self) -> impl ExactSizeIterator<Item = &Package> {
+        self.members.values()
     }
 
     pub fn root(&self) -> &Path {
@@ -26,7 +29,7 @@ impl Workspace {
         let manifest = manifest::Manifest::load(root);
 
         let mut workspace = Workspace {
-            members: vec![],
+            members: HashMap::new(),
             root: root.into(),
         };
 
@@ -37,7 +40,7 @@ impl Workspace {
             };
 
             for member in members {
-                let path = root.join(member);
+                let path = root.join(&member);
                 let manifest = manifest::Manifest::load(&path);
 
                 let package = match manifest.package {
@@ -48,11 +51,13 @@ impl Workspace {
                 let name = package.name.as_ref().unwrap();
 
                 // Expect unique package names in the workspace.
-                assert!(!workspace.members.iter().any(|package| {
+                assert!(!workspace.members().any(|package| {
                     package.name() == name
                 }), "duplicate package names");
 
-                workspace.members.push(Package::new(package, &path));
+                workspace.members.insert(
+                    member,
+                    Package::new(package, &path));
             }
         }
 
@@ -60,7 +65,7 @@ impl Workspace {
         if let Some(package) = manifest.package {
             let name = package.name.unwrap();
 
-            assert!(workspace.members.iter().any(|package| {
+            assert!(workspace.members().any(|package| {
                 package.name() == name
             }), "root package not listed in workspace members");
         }

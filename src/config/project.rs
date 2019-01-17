@@ -1,17 +1,17 @@
+use super::LoadError;
+
 use crate::changelog;
 use crate::Workspace;
 
 use semver::Version;
-use toml;
-
 use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 
-/// Configures `shipit` behavior.
+/// Project specific configuration specified by a `.shipit.yml` file.
 #[derive(Debug, Default)]
-pub struct Config {
+pub struct Project {
     pub packages: HashMap<String, Package>,
 }
 
@@ -45,29 +45,28 @@ const VERSION_ONLY: &str = "version";
 /// String representation of `TagFormat::NameVersion`.
 const NAME_VERSION: &str = "name-version";
 
-#[derive(Debug)]
-pub enum LoadError {
-    NotFound,
-}
+impl Project {
+    pub const DEFAULT_FILE_NAME: &'static str = ".shipit.toml";
 
-pub const DEFAULT_FILE_NAME: &str = ".shipit.toml";
-
-impl Config {
-    pub fn load(workspace: &Workspace) -> Result<Config, LoadError> {
-        let file = workspace.root().join(DEFAULT_FILE_NAME);
+    pub fn load(workspace: &Workspace) -> Result<Project, LoadError> {
+        let file = workspace.root().join(Project::DEFAULT_FILE_NAME);
         let toml = load_file(&file)?;
 
-        let mut config = Config {
+        let mut project = Project {
             packages: HashMap::new(),
         };
 
         for member in workspace.members() {
-            config.packages.insert(
+            if !toml.packages.contains_key(member.name()) {
+                continue;
+            }
+
+            project.packages.insert(
                 member.name().to_string(),
                 Package::load(member.name(), &toml));
         }
 
-        Ok(config)
+        Ok(project)
     }
 
     pub fn write(&self, path: &Path) -> Result<(), Box<::std::error::Error>> {
@@ -119,7 +118,7 @@ impl Config {
             }
         }
 
-        let mut file = File::create(path.join(DEFAULT_FILE_NAME))?;
+        let mut file = File::create(path.join(Project::DEFAULT_FILE_NAME))?;
         file.write_all(out.as_bytes())?;
 
         Ok(())
@@ -127,7 +126,7 @@ impl Config {
 }
 
 impl Package {
-    fn load(name: &str, toml: &repr::Config) -> Package {
+    fn load(name: &str, toml: &toml::Project) -> Package {
         let package_toml = toml.packages.get(name);
 
         let initial_managed_version =
@@ -190,7 +189,7 @@ impl From<toml::de::Error> for LoadError {
     }
 }
 
-pub fn load_file(path: &Path) -> Result<repr::Config, LoadError> {
+pub fn load_file(path: &Path) -> Result<toml::Project, LoadError> {
     use std::fs::File;
     use std::io::prelude::*;
 
@@ -203,15 +202,16 @@ pub fn load_file(path: &Path) -> Result<repr::Config, LoadError> {
     Ok(config)
 }
 
-mod repr {
+mod toml {
     use semver::Version;
     use serde_derive::Deserialize;
+    pub use toml::{de, from_slice};
 
     use std::collections::HashMap;
 
     /// Ship it TOML configuration representation
     #[derive(Debug, Deserialize)]
-    pub struct Config {
+    pub struct Project {
         /// Global git configuration values
         pub git: Option<Git>,
 

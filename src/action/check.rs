@@ -1,10 +1,10 @@
-use crate::{Workspace, Config};
+use crate::Workspace;
 use crate::cargo;
+use crate::config;
 use crate::git;
-use crate::package;
 
 /// Check a workspace, ensuring it is valid
-pub fn run(workspace: &Workspace, config: &Config) {
+pub fn run(workspace: &Workspace, config: &config::Project) {
     let repository = git::Repository::open(workspace.root());
 
     for member in workspace.members() {

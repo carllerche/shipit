@@ -53,6 +53,7 @@ impl Repository {
         &self.origin_url
     }
 
+    /*
     /// TODO: Make branch configurable
     pub fn wut(&self) -> Result<(), Box<::std::error::Error>> {
         let mut walk = self.inner.revwalk().unwrap();
@@ -63,7 +64,7 @@ impl Repository {
         // Walk all the commits looking for the first release commit that
         // includes....
         for res in walk {
-            let oid = res?;
+            let _oid = res?;
             /*
             let oid = match res {
                 Ok(v) => v,
@@ -83,6 +84,7 @@ impl Repository {
         println!("~~~ done");
         Ok(())
     }
+    */
 }
 
 pub fn tag_for(name: &str, version: &Version, format: TagFormat) -> String {

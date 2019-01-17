@@ -1,3 +1,5 @@
+use crate::config;
+
 use reqwest;
 use serde_derive::Deserialize;
 
@@ -14,14 +16,16 @@ pub struct Pull {
 }
 
 impl Client {
-    pub fn new() -> Client {
-        use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
+    pub fn new(config: &config::System) -> Client {
+        use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
         let mut authentication = HeaderMap::new();
 
-        authentication.insert(
-            HeaderName::from_static("token"),
-            HeaderValue::from_static("dda5c2fe7e0c2da2ad91da6322970b496fb113d9"),
-        );
+        if let Some(ref token) = config.github_token {
+            authentication.insert(
+                HeaderName::from_static("token"),
+                HeaderValue::from_str(token).unwrap(),
+            );
+        }
 
         let http = reqwest::ClientBuilder::new()
             .default_headers(authentication)
