@@ -32,7 +32,13 @@ pub fn run(workspace: &Workspace, config: &Config) {
         build: vec![],
     };
 
+    let mut missing_tags: Vec<String> = vec![];
     for member in workspace.members() {
+        // * Get initial supported version.
+        // * Get list of published crates after that
+        // * Ensure tags for each
+        // * If changelog, check format
+
         let config = &config.packages[member.name()];
 
         let mut published = cargo::published_versions(member.name());
@@ -44,23 +50,29 @@ pub fn run(workspace: &Workspace, config: &Config) {
         // Sort versions. The latest version is last.
         published.sort();
         if let Some(tag_format) = config.tag_format {
-            // for version in &published {
-            //     let tag = git::tag_for(member.name(), version, tag_format);
-            //     if !repository.tags().contains(&tag) && *version >= zero_one_zero {
-            //         panic!("missing tag `{}`", tag);
-            //     }
-            // }
-            info!(log, "TODO: identify missing tags here")
+            for version in &published {
+                let tag = git::tag_for(member.name(), &version, tag_format);
+                if !repository.tags().contains(&tag) && *version >= zero_one_zero {
+                    missing_tags.push(tag)
+                }
+            }
         } else {
             warn!(log, "NO TAGGING = {}", member.name());
+
+            // TODO: walk commits and find in Git
             // repository.wut();
         }
+    }
 
-        // * Get initial supported version.
-        // * Get list of published crates after that
-        // * Ensure tags for each
-        // * If changelog, check format
+    if !&missing_tags.is_empty() {
+        warn!(
+            log,
+            "The following missing tag(s) were identified: {:?}", missing_tags
+        );
+    } else {
+        info!(log, "All tags are Ok!");
 
+        // TODO: implement has_changelog to Workspace
         /*
         if member.has_changelog() {
             member.unpublished(&repository);
