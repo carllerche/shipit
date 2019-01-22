@@ -1,7 +1,7 @@
-use crate::Workspace;
 use crate::cargo;
 use crate::config;
 use crate::git;
+use crate::Workspace;
 
 /// Check a workspace, ensuring it is valid
 pub fn run(workspace: &Workspace, config: &config::Project) {
@@ -25,8 +25,6 @@ pub fn run(workspace: &Workspace, config: &config::Project) {
                 }
             }
         }
-
-
 
         // * Get initial supported version.
         // * Get list of published crates after that

@@ -16,8 +16,7 @@ pub fn published_versions(name: &str) -> Vec<Version> {
 
     body.lines()
         .map(|line| {
-            let published: PublishedPackage =
-                serde_json::from_str(line).unwrap();
+            let published: PublishedPackage = serde_json::from_str(line).unwrap();
 
             published.vers
         })
@@ -50,7 +49,8 @@ fn crates_index_url(name: &str) -> String {
         "https://raw.githubusercontent.com/rust-lang/crates.io-index/master/{}/{}/{}",
         &name[0..2],
         &name[2..4],
-        name)
+        name
+    )
 }
 
 #[derive(Debug, Deserialize)]

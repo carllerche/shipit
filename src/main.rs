@@ -8,11 +8,14 @@ mod changelog;
 mod config;
 mod git;
 mod github;
+mod history;
 mod manifest;
 mod package;
+mod util;
 mod workspace;
 
 use crate::config::Config;
+use crate::package::Package;
 use crate::workspace::Workspace;
 
 fn main() {
@@ -24,7 +27,7 @@ fn main() {
                 .long("project")
                 .value_name("path")
                 .help("Path of the project root")
-                .required(true)
+                .required(true),
         )
         .subcommand({ SubCommand::with_name("check").about("Check for project compliance") })
         .subcommand({ SubCommand::with_name("init").about("Initialize a project for shipit") })
@@ -35,6 +38,10 @@ fn main() {
     let root = Path::new(path);
     let workspace = Workspace::load(root);
     let config = config::Config::load(&workspace);
+
+    if true {
+        return;
+    }
 
     match matches.subcommand() {
         ("check", Some(_sub_matches)) => {

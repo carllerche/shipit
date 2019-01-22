@@ -1,5 +1,7 @@
 use crate::config;
 
+use graphql_client::{GraphQLQuery, Response};
+use regex;
 use reqwest;
 use serde_derive::Deserialize;
 
@@ -7,12 +9,45 @@ pub struct Client {
     http: reqwest::Client,
 }
 
+
 #[derive(Debug, Deserialize)]
 pub struct Pull {
-    id: u64,
-    url: String,
-    title: String,
-    merge_commit_sha: Option<String>,
+    pub id: u64,
+    pub number: u64,
+    pub url: String,
+    pub title: String,
+    pub merged_at: Option<String>,
+    pub merge_commit_sha: Option<String>,
+}
+
+/*
+struct PullIter<'a> {
+    http: &'a reqwest::Client,
+    next: Option<String>,
+}
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "graphql/github.json",
+    query_path = "graphql/my_query.graphql",
+    response_derives = "Debug",
+)]
+struct TestQuery;
+
+pub fn graphql_wut(config: &config::System) {
+    let q = TestQuery::build_query(test_query::Variables {});
+
+    let http = reqwest::Client::new();
+
+    let mut res = http
+        .post("https://api.github.com/graphql")
+        .bearer_auth(config.github_token.as_ref().unwrap())
+        .json(&q)
+        .send()
+        .unwrap();
+
+    let response_body: Response<test_query::ResponseData> = res.json().unwrap();
+    println!("{:#?}", response_body);
 }
 
 impl Client {
@@ -35,15 +70,38 @@ impl Client {
         Client { http }
     }
 
-    pub fn prs(&self) -> Vec<Pull> {
-        let pulls: Vec<Pull> = self
-            .http
-            .get("https://api.github.com/repos/carllerche/h2/pulls?state=closed")
-            .send()
-            .unwrap()
-            .json()
-            .unwrap();
-
-        pulls
+    pub fn merged_pull_requests<'a>(&'a self) -> impl Iterator<Item = Pull> + 'a {
+        PullIter {
+            http: &self.http,
+            next: Some("https://api.github.com/repos/tokio-rs/tokio/pulls?state=closed&per_page=30&sort=updated&direction=desc".to_string())
+        }
+        .flatten()
+        .filter(|pr| pr.merge_commit_sha.is_some())
     }
 }
+
+impl<'a> Iterator for PullIter<'a> {
+    type Item = Vec<Pull>;
+
+    fn next(&mut self) -> Option<Vec<Pull>> {
+        let next = match self.next.take() {
+            Some(next) => next,
+            None => return None,
+        };
+
+        let mut response = self.http.get(&next).send().unwrap();
+
+        if let Some(hdr) = response.headers().get("link") {
+            // Very hacky way to extract the next link
+            let re = regex::Regex::new(r#"<([^>]+)>;\s*rel="next""#).unwrap();
+
+            if let Some(captures) = re.captures(hdr.to_str().unwrap()) {
+                let url = captures.get(1).unwrap().as_str();
+                self.next = Some(url.to_string());
+            }
+        }
+
+        Some(response.json().unwrap())
+    }
+}
+*/

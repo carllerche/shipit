@@ -1,7 +1,7 @@
 mod project;
 mod system;
 
-pub use self::project::{Project, Package, TagFormat};
+pub use self::project::{Package, Project, TagFormat};
 pub use self::system::System;
 
 use crate::Workspace;

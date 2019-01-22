@@ -19,11 +19,14 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
 
     // Start by loading the initial version
     for member in workspace.members() {
-        config.packages.insert(member.name().to_string(), config::Package {
-            initial_managed_version: Some(member.manifest_version().clone()),
-            tag_format: None,
-            changelog: Some(changelog::DEFAULT_FILE_NAME.into()),
-        });
+        config.packages.insert(
+            member.name().to_string(),
+            config::Package {
+                initial_managed_version: Some(member.manifest_version().clone()),
+                tag_format: None,
+                changelog: Some(changelog::DEFAULT_FILE_NAME.into()),
+            },
+        );
     }
 
     if workspace.members().len() == 1 {
@@ -33,23 +36,21 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
         published.sort();
 
         let zero_one_zero = Version {
-           major: 0,
-           minor: 1,
-           patch: 0,
-           pre: vec![],
-           build: vec![],
+            major: 0,
+            minor: 1,
+            patch: 0,
+            pre: vec![],
+            build: vec![],
         };
 
         if repository.tags().is_empty() {
             // Load published crates
-            let patch_only = published
-                .iter()
-                .all(|version| *version < zero_one_zero);
+            let patch_only = published.iter().all(|version| *version < zero_one_zero);
 
             if patch_only {
                 // Set to VersionOnly
-                config.packages.get_mut(member.name()).unwrap()
-                    .tag_format = Some(config::TagFormat::VersionOnly);
+                config.packages.get_mut(member.name()).unwrap().tag_format =
+                    Some(config::TagFormat::VersionOnly);
             } else {
                 // Otherwise, do not tag the crate
             }
@@ -59,12 +60,10 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
                 None => unimplemented!("tags but no releases"),
             };
 
-            let format = config::TagFormat::all().into_iter()
+            let format = config::TagFormat::all()
+                .into_iter()
                 .find(|format| {
-                    let tag = git::tag_for(
-                        member.name(),
-                        last_release,
-                        **format);
+                    let tag = git::tag_for(member.name(), last_release, **format);
 
                     repository.tags().contains(&tag)
                 })
@@ -74,14 +73,13 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
                 panic!("could not match tag format");
             }
 
-            config.packages.get_mut(member.name()).unwrap()
-                .tag_format = format;
+            config.packages.get_mut(member.name()).unwrap().tag_format = format;
         }
     } else {
         // The tag format must be `{name}-{version}`
         for member in workspace.members() {
-            config.packages.get_mut(member.name()).unwrap()
-                .tag_format = Some(config::TagFormat::NameVersion);
+            config.packages.get_mut(member.name()).unwrap().tag_format =
+                Some(config::TagFormat::NameVersion);
         }
     }
 

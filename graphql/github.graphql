@@ -1,0 +1,21 @@
+query TestQuery {
+  repository(owner:"tokio-rs", name:"tokio") {
+    name
+    pullRequests(first: 3, states: [MERGED], after: "Y3Vyc29yOnYyOpHOBb7awQ==") {
+      edges {
+        cursor
+        node {
+          id
+          number
+          title
+        }
+      }
+    }
+  }
+}
+
+query Commits {
+  repository(owner:"tokio-rs", name"tokio") {
+    ref(
+  }
+}

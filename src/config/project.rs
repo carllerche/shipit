@@ -63,7 +63,8 @@ impl Project {
 
             project.packages.insert(
                 member.name().to_string(),
-                Package::load(member.name(), &toml));
+                Package::load(member.name(), &toml),
+            );
         }
 
         Ok(project)
@@ -74,23 +75,27 @@ impl Project {
         use std::io::Write as IoWrite;
 
         // All changelog fields must be the default value
-        assert!(self.packages.values().all(|package| {
-            // Fun
-            package.changelog.as_ref().map(|p| p.as_ref()) ==
-                Some(Path::new(changelog::DEFAULT_FILE_NAME))
-        }), "unimplemented: customized changelog configuration");
+        assert!(
+            self.packages.values().all(|package| {
+                // Fun
+                package.changelog.as_ref().map(|p| p.as_ref())
+                    == Some(Path::new(changelog::DEFAULT_FILE_NAME))
+            }),
+            "unimplemented: customized changelog configuration"
+        );
 
         // Ensure all tag_format values are the same
         let mut packages = self.packages.values();
         let tag_format = packages.next().unwrap().tag_format;
 
-        assert!(packages.all(|package| {
-            package.tag_format == tag_format
-        }), "unimplemented: different tag_format configuration values");
+        assert!(
+            packages.all(|package| package.tag_format == tag_format),
+            "unimplemented: different tag_format configuration values"
+        );
 
-        let mut out =
-            "# Automated CHANGELOG management\n\
-             [changelog]\n\n".to_string();
+        let mut out = "# Automated CHANGELOG management\n\
+                       [changelog]\n\n"
+            .to_string();
 
         if let Some(tag_format) = tag_format {
             let tag_format_str = match tag_format {
@@ -102,9 +107,7 @@ impl Project {
             writeln!(out, "tag-format = {:?}", tag_format_str)?;
         }
 
-        let mut names: Vec<&str> = self.packages.keys()
-            .map(|s| &s[..])
-            .collect();
+        let mut names: Vec<&str> = self.packages.keys().map(|s| &s[..]).collect();
 
         names.sort();
 
@@ -129,19 +132,18 @@ impl Package {
     fn load(name: &str, toml: &toml::Project) -> Package {
         let package_toml = toml.packages.get(name);
 
-        let initial_managed_version =
-            package_toml.and_then(|p| p.managed_version.clone());
+        let initial_managed_version = package_toml.and_then(|p| p.managed_version.clone());
 
         // Get the workspace global tag format
-        let mut tag_format = toml.git.as_ref()
-            .and_then(|git| {
-                match git.tag_format.as_ref().map(|s| &s[..]) {
+        let mut tag_format =
+            toml.git
+                .as_ref()
+                .and_then(|git| match git.tag_format.as_ref().map(|s| &s[..]) {
                     Some(VERSION_ONLY) => unimplemented!(),
                     Some(NAME_VERSION) => Some(TagFormat::NameVersion),
                     Some(_) => panic!(),
                     None => None,
-                }
-            });
+                });
 
         // Check package specific tag configuration
         if let Some(false) = package_toml.and_then(|p| p.tag) {
@@ -233,8 +235,7 @@ mod toml {
     /// Global changelog configuration values
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "kebab-case")]
-    pub struct Changelog {
-    }
+    pub struct Changelog {}
 
     /// Package specific configuration values
     #[derive(Debug, Deserialize)]

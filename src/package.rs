@@ -15,13 +15,14 @@ pub struct Package {
     /// Versions published to crates.io
     published_versions: Vec<Version>,
     */
-
-    /// Path on disk
+    /// Relative path from the root
     path: PathBuf,
 }
 
 impl Package {
     pub fn new(manifest: manifest::Package, path: &Path) -> Package {
+        assert!(!path.is_absolute());
+
         // Get the necessary manifest data
         let name = manifest.name.unwrap();
         let manifest_version = manifest.version.unwrap();
@@ -33,7 +34,7 @@ impl Package {
             name,
             manifest_version,
             // published_versions,
-            path: path.canonicalize().unwrap(),
+            path: path.to_owned(),
         }
     }
 
@@ -44,6 +45,10 @@ impl Package {
 
     pub fn manifest_version(&self) -> &Version {
         &self.manifest_version
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
     }
 
     /*
