@@ -22,6 +22,7 @@ pub struct Repository {
 #[derive(Debug, Clone)]
 pub enum Ref {
     Remote { remote: String, name: String },
+    Head(String),
     Tag(String),
     Sha(git2::Oid),
 }
@@ -246,6 +247,10 @@ impl Ref {
         }
     }
 
+    pub fn head(name: &str) -> Ref {
+        Ref::Head(name.to_string())
+    }
+
     pub fn tag(name: &str) -> Ref {
         Ref::Tag(name.to_string())
     }
@@ -258,6 +263,9 @@ impl fmt::Display for Ref {
         match *self {
             Remote { ref remote, ref name } => {
                 write!(fmt, "refs/remotes/{}/{}", remote, name)
+            }
+            Head(ref name) => {
+                write!(fmt, "refs/heads/{}", name)
             }
             Tag(ref name) => {
                 write!(fmt, "refs/tags/{}", name)

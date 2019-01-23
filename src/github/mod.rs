@@ -25,6 +25,12 @@ impl<T> Client<T>
 where
     T: Transport,
 {
+    pub fn with_transport(transport: T) -> Client<T> {
+        Client {
+            transport,
+        }
+    }
+
     /// Find the oldest published date for the commits referenced by `refs`.
     pub fn pushed_date(&self, refs: &[git::Ref]) -> Result<DateTime, Error> {
         pushed_date::query(&self.transport, refs)

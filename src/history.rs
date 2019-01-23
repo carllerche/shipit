@@ -29,7 +29,7 @@ impl History {
     }
 
     /// Load git history for a branch, including pull requests.
-    pub fn load(
+    pub fn load<T>(
         // The repository to load from
         repository: &mut Repository,
 
@@ -40,8 +40,11 @@ impl History {
         terminals: &[git::Ref],
 
         // Handle to the github client
-        github: &github::Client,
-    ) -> History {
+        github: &github::Client<T>,
+    ) -> History
+    where
+        T: github::Transport,
+    {
         for terminal in terminals {
             assert!(
                 repository.is_descendant_of(head, terminal),
@@ -56,15 +59,23 @@ impl History {
 
         // Find the oldest push date. This is used to limit the number of pull
         // requests being checked.
-        let pushed_date = github.pushed_date(&terminals).unwrap();
+        let pushed_date = if !terminals.is_empty() {
+            Some(github.pushed_date(&terminals).unwrap())
+        } else {
+            None
+        };
 
         // An iterator to pull requests
         let mut pulls = util::Replay::new({
             github.pull_requests()
                 .take_while(|pull| {
-                    match pull.as_ref() {
-                        Ok(pull) if pull.updated_at < pushed_date => false,
-                        _ => true,
+                    if let Some(date) = pushed_date {
+                        match pull.as_ref() {
+                            Ok(pull) if pull.updated_at < date => false,
+                            _ => true,
+                        }
+                    } else {
+                        true
                     }
                 })
                 // The error must be clone

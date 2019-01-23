@@ -19,3 +19,6 @@ url = "1.7.2"
 slog = "2.4.1"
 slog-term = "2.4.0"
 slog-async = "2.3.0"
+
+[dev-dependencies]
+tempdir = "0.3.7"

@@ -1,6 +1,5 @@
 query PullRequests($owner: String!, $name: String!, $after: String) {
   repository(owner:$owner, name:$name) {
-    name
     pullRequests(first: 100, states: [MERGED], orderBy: {direction: DESC, field: UPDATED_AT}, after: $after) {
       edges {
         cursor
