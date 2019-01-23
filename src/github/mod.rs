@@ -1,23 +1,63 @@
-use crate::config;
+mod pulls;
+mod pushed_date;
 
+pub use self::pulls::PullRequest;
+
+use crate::config;
+use crate::git;
+
+use chrono::{self, offset::Utc};
 use graphql_client::{GraphQLQuery, Response};
 use regex;
 use reqwest;
+use serde::{Serialize};
+use serde::de::DeserializeOwned;
 use serde_derive::Deserialize;
 
 pub struct Client {
     http: reqwest::Client,
+    token: String,
 }
 
+pub type DateTime = chrono::DateTime<Utc>;
 
-#[derive(Debug, Deserialize)]
-pub struct Pull {
-    pub id: u64,
-    pub number: u64,
-    pub url: String,
-    pub title: String,
-    pub merged_at: Option<String>,
-    pub merge_commit_sha: Option<String>,
+type Error = Box<dyn ::std::error::Error>;
+
+const QUERY_URL: &str = "https://api.github.com/graphql";
+
+impl Client {
+    pub fn new(config: &config::System) -> Client {
+        Client {
+            http: reqwest::Client::new(),
+            token: config.github_token.as_ref().unwrap().to_string(),
+        }
+    }
+
+    /// Find the oldest published date for the commits referenced by `refs`.
+    pub fn pushed_date(&self, refs: &[git::Ref]) -> Result<DateTime, Error> {
+        pushed_date::query(self, refs)
+    }
+
+    /// Get pull requests
+    pub fn pull_requests<'a>(&'a self)
+        -> impl Iterator<Item = Result<PullRequest, Error>> + 'a
+    {
+        pulls::query(self)
+    }
+
+    fn query<T, U>(&self, query: T) -> Result<U, Error>
+    where
+        T: Serialize,
+        U: DeserializeOwned,
+    {
+        let mut response = self.http
+            .post(QUERY_URL)
+            .bearer_auth(&self.token)
+            .json(&query)
+            .send()?;
+
+        Ok(response.json()?)
+    }
 }
 
 /*

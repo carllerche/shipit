@@ -1,21 +1,22 @@
-query TestQuery {
-  repository(owner:"tokio-rs", name:"tokio") {
+query PullRequests($owner: String!, $name: String!, $after: String) {
+  repository(owner:$owner, name:$name) {
     name
-    pullRequests(first: 3, states: [MERGED], after: "Y3Vyc29yOnYyOpHOBb7awQ==") {
+    pullRequests(first: 100, states: [MERGED], orderBy: {direction: DESC, field: UPDATED_AT}, after: $after) {
       edges {
         cursor
         node {
           id
           number
           title
+          updatedAt
+          mergeCommit {
+            oid
+          }
         }
       }
+      pageInfo {
+        hasNextPage
+      }
     }
-  }
-}
-
-query Commits {
-  repository(owner:"tokio-rs", name"tokio") {
-    ref(
   }
 }

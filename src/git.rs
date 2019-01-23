@@ -19,10 +19,10 @@ pub struct Repository {
 }
 
 /// A git ref.
-#[derive(Debug)]
-pub enum Ref<T> {
-    Remote { remote: T, name: T },
-    Tag(T),
+#[derive(Debug, Clone)]
+pub enum Ref {
+    Remote { remote: String, name: String },
+    Tag(String),
     Sha(git2::Oid),
 }
 
@@ -32,9 +32,6 @@ pub struct FileSet {
 }
 
 pub type Error = Box<dyn ::std::error::Error>;
-
-/// Absolute git ref notation
-struct Absolute<'a, T>(&'a Ref<T>);
 
 impl Repository {
     pub fn open(path: &Path) -> Repository {
@@ -76,10 +73,7 @@ impl Repository {
     }
 
     /// Returns the `Oid` referenced by `reference`.
-    pub fn deref<T>(&self, reference: &Ref<T>) -> Result<git2::Oid, Error>
-    where
-        T: AsRef<str>
-    {
+    pub fn deref(&self, reference: &Ref) -> Result<git2::Oid, Error> {
         match *reference {
             Ref::Sha(oid) => {
                 // Ensure the commit exists in the repository
@@ -87,19 +81,23 @@ impl Repository {
                 Ok(oid)
             }
             _ => {
-                let reference = Absolute(reference).to_string();
+                let reference = reference.to_string();
                 let oid = self.inner.refname_to_id(&reference)?;
                 Ok(oid)
             }
         }
     }
 
+    pub fn references(&self, reference: &Ref, oid: git2::Oid) -> bool {
+        match self.deref(reference) {
+            Ok(o) if o == oid => true,
+            _ => false,
+        }
+    }
+
     /// Returns `true` if the commit referenced by `tag` is contained by the
     /// branch `branch`.
-    pub fn is_descendant_of<T, U>(&self, descendant: &Ref<T>, ancestor: &Ref<U>) -> bool
-    where T: AsRef<str>,
-          U: AsRef<str>,
-    {
+    pub fn is_descendant_of(&self, descendant: &Ref, ancestor: &Ref) -> bool {
         let descendant_id = match self.deref(descendant) {
             Ok(oid) => oid,
             Err(_) => return false,
@@ -115,24 +113,22 @@ impl Repository {
             .unwrap()
     }
 
-    pub fn find_commit(&self, oid: git2::Oid) -> Result<git2::Commit, Error> {
+    pub fn find_commit(&self, oid: &Ref) -> Result<git2::Commit, Error> {
+        let oid = self.deref(oid)?;
+
         self.inner.find_commit(oid)
             .map_err(Into::into)
     }
 
-    pub fn commits_in_range<'a, T, U>(
+    pub fn commits_in_range<'a>(
         &'a self,
-        from: &Ref<T>,
-        to: &Ref<U>,
-    ) -> impl Iterator<Item = git2::Oid> + 'a
-    where
-        T: AsRef<str>,
-        U: AsRef<str>,
-    {
+        from: &Ref,
+        to: &Ref,
+    ) -> impl Iterator<Item = git2::Oid> + 'a {
         // The tree must be walked
         let mut walk = self.inner.revwalk().unwrap();
 
-        let range = format!("{}..{}", Absolute(from), Absolute(to));
+        let range = format!("{}..{}", from, to);
 
         // Push the requested ranged, formatted appropriately.
         walk.push_range(&range).unwrap();
@@ -140,15 +136,15 @@ impl Repository {
         walk.map(|res| res.unwrap())
     }
 
-    pub fn merge_base<T>(&self, refs: &[Ref<T>]) -> Result<git2::Oid, Error> {
+    pub fn merge_base(&self, refs: &[Ref]) -> Result<git2::Oid, Error> {
         assert!(!refs.is_empty(), "empty refs array");
 
-        let iter = refs.iter();
+        let mut iter = refs.iter();
         let first_ref = iter.next().unwrap();
 
         let mut base = self.deref(first_ref).unwrap();
 
-        for next_ref = iter {
+        for next_ref in iter {
             let oid = self.deref(next_ref).unwrap();
             base = self.inner.merge_base(base, oid)?;
         }
@@ -242,16 +238,30 @@ impl FileSet {
     }
 }
 
-impl<'a, T> fmt::Display for Absolute<'a, T>
-where
-    T: AsRef<str>
-{
+impl Ref {
+    pub fn remote(remote: &str, name: &str) -> Ref {
+        Ref::Remote {
+            remote: remote.to_string(),
+            name: name.to_string(),
+        }
+    }
+
+    pub fn tag(name: &str) -> Ref {
+        Ref::Tag(name.to_string())
+    }
+}
+
+impl fmt::Display for Ref {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         use self::Ref::*;
 
-        match self.0 {
-            Remote { remote, name } => write!(fmt, "refs/remotes/{}/{}", remote.as_ref(), name.as_ref()),
-            Tag(name) => write!(fmt, "refs/tags/{}", name.as_ref()),
+        match *self {
+            Remote { ref remote, ref name } => {
+                write!(fmt, "refs/remotes/{}/{}", remote, name)
+            }
+            Tag(ref name) => {
+                write!(fmt, "refs/tags/{}", name)
+            }
             Sha(oid) => write!(fmt, "{}", oid),
         }
     }

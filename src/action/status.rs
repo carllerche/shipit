@@ -1,7 +1,7 @@
+use crate::{Config, History, Workspace};
 use crate::cargo;
 use crate::git;
 use crate::github;
-use crate::{Config, Workspace};
 
 use slog::*;
 use git2;
@@ -26,44 +26,19 @@ struct Commit {
 
 /// Check a workspace, ensuring it is valid
 pub fn run(workspace: &Workspace, config: &Config) {
-    /*
-    let decorator = slog_term::TermDecorator::new().build();
-    let drain = slog_term::FullFormat::new(decorator).build().fuse();
-    let drain = slog_async::Async::new(drain).build().fuse();
-
-    let log = slog::Logger::root(drain, o!());
+    // Initialize a new Github client
     let github = github::Client::new(&config.system);
 
-    let pulls = github.prs();
-
-    for pr in pulls.iter() {
-        info!(log, "{:?}\n", pr);
-    }
-    */
-
-    let repository = git::Repository::open(workspace.root());
-
-    /*
-    let zero_one_zero = Version {
-        major: 0,
-        minor: 1,
-        patch: 0,
-        pre: vec![],
-        build: vec![],
-    };
-
-    // To check:
-    //
-    // * All tags are contained by the `master` branch
-    //
-    // Action:
-    //
-    // * Find the oldest commit in the branch. All searched PRs will need to
-    //   have been merged as a decendent of these commits.
-    */
+    // Open the git repository
+    let mut repository = git::Repository::open(workspace.root());
 
     // Collect refs for previous releases
     let mut last_release_refs = vec![];
+
+    let remote = git::Ref::Remote {
+        remote: "origin".to_string(),
+        name: "master".to_string(),
+    };
 
     // Iterate over all packages managed by shipit.
     for (name, package_config) in &config.project.packages {
@@ -91,11 +66,6 @@ pub fn run(workspace: &Workspace, config: &Config) {
                 let tag_name = git::tag_for(name, version, tag_format);
                 let tag = git::Ref::Tag(tag_name);
 
-                let remote = git::Ref::Remote {
-                    remote: "origin",
-                    name: "master",
-                };
-
                 // First, ensure that the tag is contained by the master branch
                 assert!(
                     repository.is_descendant_of(&remote, &tag),
@@ -103,25 +73,6 @@ pub fn run(workspace: &Workspace, config: &Config) {
                 );
 
                 last_release_refs.push(tag);
-
-                /*
-                for commit in repository.commits_in_range(&tag, &remote) {
-                    let changed_files = commits
-                        .entry(commit)
-                        .or_insert_with(|| repository.files_changed(commit));
-
-                    println!("    + commit = {}", commit);
-
-                    if changed_files.modifies(package, &workspace) {
-                        println!("      + modifies package");
-
-                        per_package
-                            .entry(package.name())
-                            .or_insert(vec![])
-                            .push(commit);
-                    }
-                }
-                */
             } else {
                 // This is the initial commit
                 unimplemented!();
@@ -129,18 +80,13 @@ pub fn run(workspace: &Workspace, config: &Config) {
         } else {
             unimplemented!();
         }
-
-        // * Get initial supported version.
-        // * Get list of published crates after that
-        // * Ensure tags for each
-        // * If changelog, check format
-
-        /*
-        if member.has_changelog() {
-            member.unpublished(&repository);
-        }
-        */
     }
+
+    let history = History::load(
+        &mut repository,
+        &remote,
+        &last_release_refs[..],
+        &github);
 
 
     /*

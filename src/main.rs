@@ -15,6 +15,7 @@ mod util;
 mod workspace;
 
 use crate::config::Config;
+use crate::history::History;
 use crate::package::Package;
 use crate::workspace::Workspace;
 
@@ -38,10 +39,6 @@ fn main() {
     let root = Path::new(path);
     let workspace = Workspace::load(root);
     let config = config::Config::load(&workspace);
-
-    if true {
-        return;
-    }
 
     match matches.subcommand() {
         ("check", Some(_sub_matches)) => {

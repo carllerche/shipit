@@ -1,9 +1,11 @@
-use crate::git::{self, Repository};
+use crate::git::{self, Ref, Repository};
 use crate::github;
 use crate::util;
 use git2;
 
 use std::collections::VecDeque;
+use std::fmt;
+use std::rc::Rc;
 
 pub struct History {
     commits: Vec<()>,
@@ -16,44 +18,94 @@ pub struct Commit {
 
 impl History {
     /// Load git history for a branch, including pull requests.
-    pub fn load<T>(
+    pub fn load(
         // The repository to load from
         repository: &mut Repository,
 
         // The git branch to traverse
-        head: &git::Ref<T>,
+        head: &git::Ref,
 
         // Refs to traverse until
-        terminals: &[git::Ref<T>],
+        terminals: &[git::Ref],
 
-        // Pull requests
-        pulls: impl Iterator<Item = github::Pull>,
-    ) -> History
-    where
-        T: AsRef<str>,
-    {
+        // Handle to the github client
+        github: &github::Client,
+    ) -> History {
         for terminal in terminals {
-            assert!(repository.is_descendant_of(terminal, head));
+            assert!(
+                repository.is_descendant_of(head, terminal),
+                "head = {:?}; terminal = {:?}",
+                head,
+                terminal);
         }
 
-        let merge_base = repository.merge_base(terminals);
+        println!("TERMINALS = {:#?}", terminals);
 
-        // We will need to iterate the pull requests multiple times.
-        let pulls = util::Replay::new(pulls);
+        let mut terminals = terminals.to_vec();
+
+        // Find the oldest push date. This is used to limit the number of pull
+        // requests being checked.
+        let pushed_date = github.pushed_date(&terminals).unwrap();
+
+        // An iterator to pull requests
+        let mut pulls = util::Replay::new({
+            github.pull_requests()
+                .take_while(|pull| {
+                    match pull.as_ref() {
+                        Ok(pull) if pull.updated_at < pushed_date => false,
+                        _ => true,
+                    }
+                })
+                // The error must be clone
+                .map(|res| res.map_err(Rc::new))
+        });
 
         // Commits part of the history
         // let mut commits = vec![];
 
         // Remaining commits to walk
         let mut rem = VecDeque::new();
-        rem.push_front(head);
+        rem.push_back(head.clone());
 
         while let Some(oid) = rem.pop_front() {
             // Find the commit
-            let commit = repository.find_commit(oid).unwrap();
+            let commit = repository.find_commit(&oid).unwrap();
 
-            if let Some(pull) = find_pr_for(&commit, pulls.clone())A {
+            if commit.parent_count() > 1 {
                 unimplemented!();
+            } else {
+                let pull = pulls
+                    .iter()
+                    .find(|pull| commit.id() == pull.as_ref().unwrap().merge_commit);
+
+                if let Some(pull) = pull {
+                    let pull = pull.unwrap();
+                    println!("PR MATCH; {:?} -- (#{})", commit.summary(), pull.number);
+                }
+
+                let mut reached_terminal = false;
+
+                terminals.retain(|terminal| {
+                    let matches = repository.references(terminal, commit.id());
+                    reached_terminal |= matches;
+                    !matches
+                });
+
+                let parent = commit.parent(0).unwrap();
+
+                if reached_terminal {
+                    // Check if the parent is descendent of any remaining
+                    // termianls
+                    let more_terminals = terminals.iter().any(|terminal| {
+                        repository.is_descendant_of(&Ref::Sha(parent.id()), terminal)
+                    });
+
+                    if !more_terminals {
+                        continue;
+                    }
+                }
+
+                rem.push_back(Ref::Sha(parent.id()));
             }
         }
 
@@ -63,7 +115,7 @@ impl History {
 
 fn find_pr_for(
     commit: &git2::Commit,
-    prs: impl Iterator<Item = github::Pull>
-) -> Option<github::Pull> {
+    prs: impl Iterator<Item = github::PullRequest>
+) -> Option<github::PullRequest> {
     unimplemented!();
 }
