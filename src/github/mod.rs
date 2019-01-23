@@ -7,12 +7,9 @@ use crate::config;
 use crate::git;
 
 use chrono::{self, offset::Utc};
-use graphql_client::{GraphQLQuery, Response};
-use regex;
 use reqwest;
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
-use serde_derive::Deserialize;
 
 pub struct Client {
     http: reqwest::Client,

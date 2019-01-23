@@ -4,7 +4,6 @@ use crate::util;
 use git2;
 
 use std::collections::VecDeque;
-use std::fmt;
 use std::rc::Rc;
 
 pub struct History {
@@ -12,8 +11,14 @@ pub struct History {
 }
 
 pub struct Commit {
-    sha: git2::Oid,
-    pull: u64,
+    /// The commit object ID
+    oid: git2::Oid,
+
+    /// The pull requests that the commit originated from.
+    ///
+    /// There can possibly be multiple commits if pull requests are merged into
+    /// other pull requests.
+    pulls: Vec<github::PullRequest>,
 }
 
 impl History {
@@ -61,7 +66,7 @@ impl History {
         });
 
         // Commits part of the history
-        // let mut commits = vec![];
+        let mut commits = vec![];
 
         // Remaining commits to walk
         let mut rem = VecDeque::new();
@@ -109,6 +114,8 @@ impl History {
             }
         }
 
-        unimplemented!();
+        History {
+            commits,
+        }
     }
 }

@@ -1,23 +1,6 @@
+use shipit::{action, Config, Workspace};
 use clap::{App, Arg, SubCommand};
-
 use std::path::Path;
-
-mod action;
-mod cargo;
-mod changelog;
-mod config;
-mod git;
-mod github;
-mod history;
-mod manifest;
-mod package;
-mod util;
-mod workspace;
-
-use crate::config::Config;
-use crate::history::History;
-use crate::package::Package;
-use crate::workspace::Workspace;
 
 fn main() {
     let matches = App::new("Ship It!")
@@ -38,7 +21,7 @@ fn main() {
     let path = matches.value_of("project-path").unwrap();
     let root = Path::new(path);
     let workspace = Workspace::load(root);
-    let config = config::Config::load(&workspace);
+    let config = Config::load(&workspace);
 
     match matches.subcommand() {
         ("check", Some(_sub_matches)) => {

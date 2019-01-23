@@ -1,6 +1,5 @@
 use crate::git;
 use serde_derive::{Serialize, Deserialize};
-use serde_json::Value;
 
 use std::collections::HashMap;
 

@@ -3,10 +3,7 @@ use crate::cargo;
 use crate::git;
 use crate::github;
 
-use slog::*;
 use git2;
-
-use std::collections::HashMap;
 
 /*
 /// Unpublished changes
@@ -43,7 +40,7 @@ pub fn run(workspace: &Workspace, config: &Config) {
     // Iterate over all packages managed by shipit.
     for (name, package_config) in &config.project.packages {
         // Get the workspace package.
-        let package = workspace.get_member(name).unwrap();
+        // let package = workspace.get_member(name).unwrap();
 
         // Get list of published versions
         let mut published = cargo::published_versions(name);

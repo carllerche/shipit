@@ -1,8 +1,6 @@
 use super::DateTime;
 
-use git2::Oid;
 use graphql_client::{GraphQLQuery, Response};
-use serde_derive::Deserialize;
 
 #[derive(GraphQLQuery)]
 #[graphql(
