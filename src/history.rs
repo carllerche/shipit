@@ -112,10 +112,3 @@ impl History {
         unimplemented!();
     }
 }
-
-fn find_pr_for(
-    commit: &git2::Commit,
-    prs: impl Iterator<Item = github::PullRequest>
-) -> Option<github::PullRequest> {
-    unimplemented!();
-}
