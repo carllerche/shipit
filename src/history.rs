@@ -6,22 +6,28 @@ use git2;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
+#[derive(Debug)]
 pub struct History {
-    commits: Vec<()>,
+    commits: Vec<Commit>,
 }
 
+#[derive(Debug)]
 pub struct Commit {
     /// The commit object ID
-    oid: git2::Oid,
+    pub oid: git2::Oid,
 
     /// The pull requests that the commit originated from.
     ///
     /// There can possibly be multiple commits if pull requests are merged into
     /// other pull requests.
-    pulls: Vec<github::PullRequest>,
+    pub pulls: Vec<github::PullRequest>,
 }
 
 impl History {
+    pub fn commits(&self) -> &[Commit] {
+        &self.commits[..]
+    }
+
     /// Load git history for a branch, including pull requests.
     pub fn load(
         // The repository to load from
@@ -74,29 +80,35 @@ impl History {
 
         while let Some(oid) = rem.pop_front() {
             // Find the commit
-            let commit = repository.find_commit(&oid).unwrap();
+            let git_commit = repository.find_commit(&oid).unwrap();
 
-            if commit.parent_count() > 1 {
+            if git_commit.parent_count() > 1 {
                 unimplemented!();
             } else {
                 let pull = pulls
                     .iter()
-                    .find(|pull| commit.id() == pull.as_ref().unwrap().merge_commit);
+                    .find(|pull| {
+                        git_commit.id() == pull.as_ref().unwrap().merge_commit
+                    });
 
                 if let Some(pull) = pull {
                     let pull = pull.unwrap();
-                    println!("PR MATCH; {:?} -- (#{})", commit.summary(), pull.number);
+
+                    commits.push(Commit {
+                        oid: git_commit.id(),
+                        pulls: vec![pull],
+                    });
                 }
 
                 let mut reached_terminal = false;
 
                 terminals.retain(|terminal| {
-                    let matches = repository.references(terminal, commit.id());
+                    let matches = repository.references(terminal, git_commit.id());
                     reached_terminal |= matches;
                     !matches
                 });
 
-                let parent = commit.parent(0).unwrap();
+                let parent = git_commit.parent(0).unwrap();
 
                 if reached_terminal {
                     // Check if the parent is descendent of any remaining

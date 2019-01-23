@@ -1,4 +1,4 @@
-use super::DateTime;
+use super::{DateTime, Transport};
 
 use graphql_client::{GraphQLQuery, Response};
 
@@ -17,8 +17,10 @@ pub struct PullRequest {
     pub merge_commit: git2::Oid,
 }
 
-pub fn query<'a>(client: &'a super::Client)
+pub fn query<'a, T>(client: &'a T)
     -> impl Iterator<Item = Result<PullRequest, super::Error>> + 'a
+where
+    T: Transport,
 {
     Iter {
         client,
@@ -28,13 +30,16 @@ pub fn query<'a>(client: &'a super::Client)
     .flatten()
 }
 
-struct Iter<'a> {
-    client: &'a super::Client,
+struct Iter<'a, T> {
+    client: &'a T,
     after: Option<String>,
     done: bool,
 }
 
-impl<'a> Iterator for Iter<'a> {
+impl<'a, T> Iterator for Iter<'a, T>
+where
+    T: Transport,
+{
     type Item = Vec<Result<PullRequest, super::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -1,10 +1,13 @@
+use super::Transport;
 use crate::git;
 use serde_derive::{Serialize, Deserialize};
 
 use std::collections::HashMap;
 
-pub fn query(client: &super::Client, refs: &[git::Ref])
+pub fn query<T>(client: &T, refs: &[git::Ref])
     -> Result<super::DateTime, super::Error>
+where
+    T: Transport,
 {
     // Build the fragments
     let fragments = refs
@@ -33,7 +36,7 @@ pub fn query(client: &super::Client, refs: &[git::Ref])
             }}
         }}"##, fragments);
 
-    let response: Response = client.query(Request {
+    let response: Response = client.query(&Request {
         query,
     })?;
 

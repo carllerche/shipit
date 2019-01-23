@@ -85,6 +85,10 @@ pub fn run(workspace: &Workspace, config: &Config) {
         &last_release_refs[..],
         &github);
 
+    for commit in history.commits() {
+        println!("{:?}", commit);
+    }
+
 
     /*
     // All commits
