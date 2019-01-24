@@ -1,5 +1,6 @@
 use crate::{Config, History, Workspace};
 use crate::cargo;
+use crate::config::TagFormat;
 use crate::git;
 use crate::github;
 
@@ -55,27 +56,32 @@ pub fn run(workspace: &Workspace, config: &Config) {
 
         // Next, find the last published ref. This is used as the starting point
         // to determine if there are unpublished changes
-        if let Some(tag_format) = package_config.tag_format {
-            // TODO: Validate that tags exist for all published versions'
-
-            if let Some(version) = published.last() {
-                // Generate the tag
-                let tag_name = git::tag_for(name, version, tag_format);
-                let tag = git::Ref::Tag(tag_name);
-
-                // First, ensure that the tag is contained by the master branch
-                assert!(
-                    repository.is_descendant_of(&remote, &tag),
-                    "tag not in history of branch"
-                );
-
-                last_release_refs.push(tag);
-            } else {
-                // This is the initial commit
-                unimplemented!();
+        match package_config.tag_format {
+            Some(TagFormat::Skip) => {
+                unimplemented!("package={}", name);
             }
-        } else {
-            unimplemented!();
+            Some(tag_format) => {
+                // TODO: Validate that tags exist for all published versions'
+
+                if let Some(version) = published.last() {
+                    // Generate the tag
+                    let tag_name = git::tag_for(name, version, tag_format);
+                    let tag = git::Ref::Tag(tag_name);
+
+                    // First, ensure that the tag is contained by the master branch
+                    assert!(
+                        repository.is_descendant_of(&remote, &tag),
+                        "tag not in history of branch; tag={}; branch={}",
+                        tag,
+                        remote
+                    );
+
+                    last_release_refs.push(tag);
+                } else {
+                    // This is the initial commit
+                }
+            }
+            _ => unimplemented!(),
         }
     }
 
@@ -86,7 +92,8 @@ pub fn run(workspace: &Workspace, config: &Config) {
         &github);
 
     for commit in history.commits() {
-        println!("{:#?}", commit);
+        let c = repository.find_commit(&git::Ref::Sha(commit.oid)).unwrap();
+        println!("{:#?}", (c.message(), commit));
     }
 
 

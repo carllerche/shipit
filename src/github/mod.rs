@@ -9,6 +9,7 @@ use crate::git;
 
 use chrono::{self, offset::Utc};
 use reqwest;
+use url::{Host, Url};
 
 /// Issue requests to Github
 pub struct Client<T = reqwest::Client> {
@@ -21,6 +22,11 @@ pub type DateTime = chrono::DateTime<Utc>;
 /// Error type
 pub type Error = Box<dyn ::std::error::Error>;
 
+pub struct RepositoryId {
+    owner: String,
+    name: String,
+}
+
 impl<T> Client<T>
 where
     T: Transport,
@@ -32,15 +38,32 @@ where
     }
 
     /// Find the oldest published date for the commits referenced by `refs`.
-    pub fn pushed_date(&self, refs: &[git::Ref]) -> Result<DateTime, Error> {
-        pushed_date::query(&self.transport, refs)
+    pub fn pushed_date(&self, repo: &RepositoryId, refs: &[git::Ref])
+        -> Result<DateTime, Error>
+    {
+        pushed_date::query(&self.transport, repo, refs)
     }
 
     /// Get pull requests
-    pub fn pull_requests<'a>(&'a self)
+    pub fn pull_requests<'a>(&'a self, repo: &'a RepositoryId)
         -> impl Iterator<Item = Result<PullRequest, Error>> + 'a
     {
-        pulls::query(&self.transport)
+        pulls::query(&self.transport, repo)
+    }
+}
+
+impl RepositoryId {
+    pub fn from_url(url: &Url) -> RepositoryId {
+        assert_eq!(url.host(), Some(Host::Domain("github.com")));
+
+        let segments: Vec<_> = url.path_segments()
+            .expect("invalid Github repository URL")
+            .collect();
+
+        RepositoryId {
+            owner: segments[0].to_string(),
+            name: segments[1].to_string(),
+        }
     }
 }
 

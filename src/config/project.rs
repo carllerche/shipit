@@ -3,6 +3,7 @@ use super::LoadError;
 use crate::changelog;
 use crate::Workspace;
 
+use git2;
 use semver::Version;
 use std::collections::HashMap;
 use std::fs::File;
@@ -18,10 +19,15 @@ pub struct Project {
 /// Package configuration
 #[derive(Debug)]
 pub struct Package {
-    /// Crate version at which `shipit` begins managing to the release process.
+    /// Crate version at which `shipit` begins managing the release process.
     ///
     /// Any version prior to this will be ignored.
     pub initial_managed_version: Option<Version>,
+
+    /// Git SHA at which `shipit` begins managing the release process.
+    ///
+    /// This is used when releases are not tracked with tags.
+    pub initial_managed_sha: Option<git2::Oid>,
 
     /// `Some` when releases are tagged.
     pub tag_format: Option<TagFormat>,
@@ -30,13 +36,16 @@ pub struct Package {
     pub changelog: Option<PathBuf>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum TagFormat {
     /// Example: `v0.1.1`
     VersionOnly,
 
     /// Example: `tokio-0.1.1`
     NameVersion,
+
+    /// Skip tagging for this project
+    Skip,
 }
 
 /// String representation of `TagFormat::VersionOnly`.
@@ -44,6 +53,9 @@ const VERSION_ONLY: &str = "version";
 
 /// String representation of `TagFormat::NameVersion`.
 const NAME_VERSION: &str = "name-version";
+
+/// STring representation of `RTagFormat::Skip`.
+const SKIP: &str = "skip";
 
 impl Project {
     pub const DEFAULT_FILE_NAME: &'static str = ".shipit.toml";
@@ -70,9 +82,11 @@ impl Project {
         Ok(project)
     }
 
-    pub fn write(&self, path: &Path) -> Result<(), Box<::std::error::Error>> {
+    pub fn to_string(&self) -> Result<String, Box<::std::error::Error>> {
+        use std::collections::HashMap;
         use std::fmt::Write;
-        use std::io::Write as IoWrite;
+
+        let mut out = String::new();
 
         // All changelog fields must be the default value
         assert!(
@@ -84,27 +98,31 @@ impl Project {
             "unimplemented: customized changelog configuration"
         );
 
-        // Ensure all tag_format values are the same
-        let mut packages = self.packages.values();
-        let tag_format = packages.next().unwrap().tag_format;
+        let default_tag_format = {
+            // Tag format counts
+            let mut counts = HashMap::new();
 
-        assert!(
-            packages.all(|package| package.tag_format == tag_format),
-            "unimplemented: different tag_format configuration values"
-        );
+            for package in self.packages.values() {
+                if let Some(tag_format) = package.tag_format.as_ref() {
+                    let count = counts.entry(tag_format)
+                        .or_insert(0);
+
+                    *count += 1;
+                }
+            }
+
+            counts.iter()
+                .max_by_key(|(k, v)| *v)
+                .map(|(k, _)| **k)
+        };
 
         let mut out = "# Automated CHANGELOG management\n\
                        [changelog]\n\n"
             .to_string();
 
-        if let Some(tag_format) = tag_format {
-            let tag_format_str = match tag_format {
-                TagFormat::VersionOnly => VERSION_ONLY,
-                TagFormat::NameVersion => NAME_VERSION,
-            };
-
+        if let Some(tag_format) = default_tag_format {
             writeln!(out, "[git]")?;
-            writeln!(out, "tag-format = {:?}", tag_format_str)?;
+            writeln!(out, "tag-format = {:?}", tag_format.as_str())?;
         }
 
         let mut names: Vec<&str> = self.packages.keys().map(|s| &s[..]).collect();
@@ -114,17 +132,31 @@ impl Project {
         for name in &names {
             let package = &self.packages[*name];
 
-            if let Some(ref initial_version) = package.initial_managed_version {
+            let include =
+                package.initial_managed_version.is_some() ||
+                package.initial_managed_sha.is_some();
+
+            if include {
                 writeln!(out, "")?;
                 writeln!(out, "[packages.{}]", name)?;
-                writeln!(out, "managed-version = \"{}\"", initial_version)?;
+
+                if let Some(tag_format) = package.tag_format {
+                    if package.tag_format != default_tag_format {
+                        writeln!(out, "tag-format = {:?}", tag_format.as_str())?;
+                    }
+                }
+
+                if let Some(ref initial_version) = package.initial_managed_version {
+                    writeln!(out, "managed-version = \"{}\"", initial_version)?;
+                }
+
+                if let Some(ref initial_sha) = package.initial_managed_sha {
+                    writeln!(out, "managed-sha = \"{}\"", initial_sha)?;
+                }
             }
         }
 
-        let mut file = File::create(path.join(Project::DEFAULT_FILE_NAME))?;
-        file.write_all(out.as_bytes())?;
-
-        Ok(())
+        Ok(out)
     }
 }
 
@@ -139,8 +171,9 @@ impl Package {
             toml.git
                 .as_ref()
                 .and_then(|git| match git.tag_format.as_ref().map(|s| &s[..]) {
-                    Some(VERSION_ONLY) => unimplemented!(),
+                    Some(VERSION_ONLY) => Some(TagFormat::VersionOnly),
                     Some(NAME_VERSION) => Some(TagFormat::NameVersion),
+                    Some(SKIP) => Some(TagFormat::Skip),
                     Some(_) => panic!(),
                     None => None,
                 });
@@ -150,8 +183,13 @@ impl Package {
             tag_format = None;
         }
 
+        let initial_managed_sha = package_toml
+            .and_then(|p| p.managed_sha.as_ref())
+            .map(|sha| sha.parse().unwrap());
+
         Package {
             initial_managed_version,
+            initial_managed_sha,
             tag_format,
             changelog: None,
         }
@@ -163,6 +201,14 @@ impl TagFormat {
         use self::TagFormat::*;
 
         &[NameVersion, VersionOnly]
+    }
+
+    pub fn as_str(&self) -> &str {
+        match *self {
+            TagFormat::VersionOnly => VERSION_ONLY,
+            TagFormat::NameVersion => NAME_VERSION,
+            TagFormat::Skip => SKIP,
+        }
     }
 }
 
@@ -243,6 +289,9 @@ mod toml {
     pub struct Package {
         /// The first release version that is managed by shipit.
         pub managed_version: Option<Version>,
+
+        /// The git sha at which `shipit` begins managing the release process.
+        pub managed_sha: Option<String>,
 
         /// Whether or not the package should be taged on release.
         pub tag: Option<bool>,

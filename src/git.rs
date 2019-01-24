@@ -200,6 +200,7 @@ pub fn tag_for(name: &str, version: &Version, format: TagFormat) -> String {
     match format {
         TagFormat::VersionOnly => format!("v{}", version),
         TagFormat::NameVersion => format!("{}-{}", name, version),
+        TagFormat::Skip => panic!("TagFormat is skip"),
     }
 }
 

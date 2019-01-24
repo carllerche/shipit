@@ -39,7 +39,8 @@ fn main() {
             action::init::run(&workspace, config.as_ref().map(|c| &c.project));
         }
         ("status", Some(_sub_matches)) => {
-            action::status::run(&workspace, &config.unwrap());
+            let config = config.expect(".shipit.toml file missing");
+            action::status::run(&workspace, &config);
         }
         _ => {
             unimplemented!();

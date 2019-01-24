@@ -4,7 +4,7 @@ use serde_derive::{Serialize, Deserialize};
 
 use std::collections::HashMap;
 
-pub fn query<T>(client: &T, refs: &[git::Ref])
+pub fn query<T>(client: &T, repo: &super::RepositoryId, refs: &[git::Ref])
     -> Result<super::DateTime, super::Error>
 where
     T: Transport,
@@ -31,10 +31,10 @@ where
 
     let query = format!(r##"
         query {{
-            repository(owner: "tokio-rs", name: "tokio") {{
+            repository(owner: {}, name: {}) {{
                 {}
             }}
-        }}"##, fragments);
+        }}"##, repo.owner, repo.name, fragments);
 
     let response: Response = client.query(&Request {
         query,

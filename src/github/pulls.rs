@@ -18,13 +18,14 @@ pub struct PullRequest {
     pub merge_commit: git2::Oid,
 }
 
-pub fn query<'a, T>(client: &'a T)
+pub fn query<'a, T>(client: &'a T, repo: &'a super::RepositoryId)
     -> impl Iterator<Item = Result<PullRequest, super::Error>> + 'a
 where
     T: Transport,
 {
     Iter {
         client,
+        repo,
         after: None,
         done: false,
     }
@@ -33,6 +34,7 @@ where
 
 struct Iter<'a, T> {
     client: &'a T,
+    repo: &'a super::RepositoryId,
     after: Option<String>,
     done: bool,
 }
@@ -49,8 +51,8 @@ where
         }
 
         let q = PullRequests::build_query(pull_requests::Variables {
-            owner: "tokio-rs".to_string(),
-            name: "tokio".to_string(),
+            owner: self.repo.owner.clone(),
+            name: self.repo.name.clone(),
             after: self.after.take(),
         });
 

@@ -55,17 +55,21 @@ impl History {
 
         let mut terminals = terminals.to_vec();
 
+        // Get the GitHub repository
+        let repository_id = github::RepositoryId::from_url(
+            repository.origin_url());
+
         // Find the oldest push date. This is used to limit the number of pull
         // requests being checked.
         let pushed_date = if !terminals.is_empty() {
-            Some(github.pushed_date(&terminals).unwrap())
+            Some(github.pushed_date(&repository_id, &terminals).unwrap())
         } else {
             None
         };
 
         // An iterator to pull requests
         let mut pulls = util::Replay::new({
-            github.pull_requests()
+            github.pull_requests(&repository_id)
                 .take_while(|pull| {
                     if let Some(date) = pushed_date {
                         match pull.as_ref() {
