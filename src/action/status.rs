@@ -86,7 +86,7 @@ pub fn run(workspace: &Workspace, config: &Config) {
         &github);
 
     for commit in history.commits() {
-        println!("{:?}", commit);
+        println!("{:#?}", commit);
     }
 
 

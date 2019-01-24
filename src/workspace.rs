@@ -64,6 +64,18 @@ impl Workspace {
                     .members
                     .insert(package.name().to_string(), package);
             }
+        } else {
+            let package = manifest.package
+                .as_ref()
+                .expect("expected package section");
+
+            let package = Package::new(
+                package.clone(),
+                Path::new(""));
+
+            workspace
+                .members
+                .insert(package.name().to_string(), package);
         }
 
         // Expect the root package exists in the workspace

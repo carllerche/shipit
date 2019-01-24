@@ -13,7 +13,7 @@ pub struct Manifest {
     pub workspace: Option<Workspace>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Package {
     pub name: Option<String>,
     pub version: Option<Version>,

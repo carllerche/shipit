@@ -13,6 +13,7 @@ struct PullRequests;
 #[derive(Debug, Clone)]
 pub struct PullRequest {
     pub number: u64,
+    pub title: String,
     pub updated_at: DateTime,
     pub merge_commit: git2::Oid,
 }
@@ -78,6 +79,7 @@ where
 
             ret.push(Ok(PullRequest {
                 number: node.number as u64,
+                title: node.title,
                 updated_at: node.updated_at,
                 merge_commit: node.merge_commit.unwrap().oid.parse().unwrap(),
             }));
