@@ -6,13 +6,43 @@ mod support;
 use self::support::*;
 
 #[test]
-fn smoke() {
+fn initial_repo() {
     let now = Utc::now();
 
     let mut git = git::Builder::new();
     let sha = git.initial_commit();
 
-    println!("UPDATED_AT = {}", now.to_string());
+    let github = github::Builder::new()
+        .response(json!({
+            "data": {
+                "repository": {
+                    "pullRequests": {
+                        "edges": [
+                        ],
+                        "pageInfo": {
+                            "hasNextPage": false,
+                        }
+                    }
+                },
+            }
+        }))
+        .build();
+
+    let history = History::load(
+        &mut git.repository(),
+        &git::Ref::head("master"),
+        &[],
+        &github);
+
+    assert_eq!(0, history.commits().len());
+}
+
+#[test]
+fn single_pull() {
+    let now = Utc::now();
+
+    let mut git = git::Builder::new();
+    let sha = git.initial_commit();
 
     let github = github::Builder::new()
         .response(json!({
@@ -23,10 +53,12 @@ fn smoke() {
                             {
                                 "cursor": "foo",
                                 "node": {
-                                    "number": 1,
-                                    "updatedAt": now.to_string(),
+                                    "id": "abc",
+                                    "number": 123,
+                                    "title": "Hello",
+                                    "updatedAt": now,
                                     "mergeCommit": {
-                                        "oid": sha.to_string(),
+                                        "oid": sha,
                                     }
                                 }
                             }
@@ -46,5 +78,11 @@ fn smoke() {
         &[],
         &github);
 
-    assert_eq!(0, history.commits().len());
+    assert_eq!(1, history.commits().len());
+
+    let commit = &history.commits()[0];
+    assert_eq!(sha, commit.oid);
+
+    assert_eq!(1, commit.pulls.len());
+    assert_eq!(123, commit.pulls[0].number);
 }

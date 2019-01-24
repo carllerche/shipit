@@ -97,7 +97,6 @@ impl History {
                 let pull = pulls
                     .iter()
                     .find(|pull| {
-                        println!("ID = {:?}", git_commit.id());
                         git_commit.id() == pull.as_ref().unwrap().merge_commit
                     });
 

@@ -19,7 +19,7 @@ pub struct Repository {
 }
 
 /// A git ref.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Ref {
     Remote { remote: String, name: String },
     Head(String),
@@ -272,5 +272,23 @@ impl fmt::Display for Ref {
             }
             Sha(oid) => write!(fmt, "{}", oid),
         }
+    }
+}
+
+impl PartialEq<git2::Oid> for Ref {
+    fn eq(&self, other: &git2::Oid) -> bool {
+        match *self {
+            Ref::Sha(oid) => oid == *other,
+            _ => false,
+        }
+    }
+}
+
+impl serde::Serialize for Ref {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer
+    {
+        self.to_string().serialize(serializer)
     }
 }

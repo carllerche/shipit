@@ -56,7 +56,9 @@ where
         let response: Response<pull_requests::ResponseData> =
             match self.client.query(&q) {
                 Ok(response) => response,
-                Err(e) => return Some(vec![Err(e.into())]),
+                Err(e) => {
+                    return Some(vec![Err(e.into())]);
+                }
             };
 
         let pull_requests = response
