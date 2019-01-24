@@ -3,11 +3,12 @@ use crate::config;
 use reqwest;
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
+use std::fmt;
 
 pub trait Transport {
     fn query<T, U>(&self, query: &T) -> Result<U, Error>
     where
-        T: Serialize,
+        T: Serialize + fmt::Debug,
         U: DeserializeOwned;
 }
 
@@ -40,13 +41,18 @@ impl super::Client<reqwest::Client> {
 impl Transport for reqwest::Client {
     fn query<T, U>(&self, query: &T) -> Result<U, Error>
     where
-        T: Serialize,
+        T: Serialize + fmt::Debug,
         U: DeserializeOwned
     {
         let mut response = self
             .post(QUERY_URL)
             .json(&query)
             .send()?;
+
+        if !response.status().is_success() {
+            println!("ERR\n{}", response.text()?);
+            unimplemented!();
+        }
 
         Ok(response.json()?)
     }

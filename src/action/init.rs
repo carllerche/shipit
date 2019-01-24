@@ -86,11 +86,17 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
         // The tag format must be `{name}-{version}` unless tagging is skipped
         for member in workspace.members() {
             let mut published = cargo::published_versions(member.name());
+            published.retain(|v| *v >= zero_one_zero);
             published.sort();
 
+            let package = config.packages.get_mut(member.name()).unwrap();
+
             let last_release = match published.last() {
-                Some(version) if *version >= zero_one_zero => version,
-                _ => continue,
+                Some(version) => version,
+                _ => {
+                    package.tag_format = Some(config::TagFormat::NameVersion);
+                    continue;
+                }
             };
 
             // Try to get the tag
@@ -100,13 +106,9 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
                 config::TagFormat::NameVersion);
 
             if repository.tags().contains(&tag) {
-                config.packages.get_mut(member.name()).unwrap().tag_format =
-                    Some(config::TagFormat::NameVersion);
-
+                package.tag_format = Some(config::TagFormat::NameVersion);
             } else {
-                let package = config.packages.get_mut(member.name()).unwrap();
-
-                package.tag_format = Some(config::TagFormat::Skip);
+                package.tag_format = None;
                 package.initial_managed_sha = Some(sha);
             }
         }

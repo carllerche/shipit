@@ -43,9 +43,6 @@ pub enum TagFormat {
 
     /// Example: `tokio-0.1.1`
     NameVersion,
-
-    /// Skip tagging for this project
-    Skip,
 }
 
 /// String representation of `TagFormat::VersionOnly`.
@@ -53,9 +50,6 @@ const VERSION_ONLY: &str = "version";
 
 /// String representation of `TagFormat::NameVersion`.
 const NAME_VERSION: &str = "name-version";
-
-/// STring representation of `RTagFormat::Skip`.
-const SKIP: &str = "skip";
 
 impl Project {
     pub const DEFAULT_FILE_NAME: &'static str = ".shipit.toml";
@@ -83,7 +77,6 @@ impl Project {
     }
 
     pub fn to_string(&self) -> Result<String, Box<::std::error::Error>> {
-        use std::collections::HashMap;
         use std::fmt::Write;
 
         let mut out = String::new();
@@ -98,29 +91,23 @@ impl Project {
             "unimplemented: customized changelog configuration"
         );
 
-        let default_tag_format = {
-            // Tag format counts
-            let mut counts = HashMap::new();
+        let tag_format = self.packages.values()
+            .filter(|package| package.tag_format.is_some())
+            .next()
+            .map(|package| {
+                // Ensure all packages use the same format
+                assert!(self.packages.values().all(|p| {
+                    p.tag_format.is_none() || p.tag_format == package.tag_format
+                }));
 
-            for package in self.packages.values() {
-                if let Some(tag_format) = package.tag_format.as_ref() {
-                    let count = counts.entry(tag_format)
-                        .or_insert(0);
-
-                    *count += 1;
-                }
-            }
-
-            counts.iter()
-                .max_by_key(|(k, v)| *v)
-                .map(|(k, _)| **k)
-        };
+                package.tag_format.unwrap()
+            });
 
         let mut out = "# Automated CHANGELOG management\n\
                        [changelog]\n\n"
             .to_string();
 
-        if let Some(tag_format) = default_tag_format {
+        if let Some(tag_format) = tag_format {
             writeln!(out, "[git]")?;
             writeln!(out, "tag-format = {:?}", tag_format.as_str())?;
         }
@@ -140,10 +127,8 @@ impl Project {
                 writeln!(out, "")?;
                 writeln!(out, "[packages.{}]", name)?;
 
-                if let Some(tag_format) = package.tag_format {
-                    if package.tag_format != default_tag_format {
-                        writeln!(out, "tag-format = {:?}", tag_format.as_str())?;
-                    }
+                if package.tag_format.is_none() {
+                    writeln!(out, "tag = false")?;
                 }
 
                 if let Some(ref initial_version) = package.initial_managed_version {
@@ -173,7 +158,6 @@ impl Package {
                 .and_then(|git| match git.tag_format.as_ref().map(|s| &s[..]) {
                     Some(VERSION_ONLY) => Some(TagFormat::VersionOnly),
                     Some(NAME_VERSION) => Some(TagFormat::NameVersion),
-                    Some(SKIP) => Some(TagFormat::Skip),
                     Some(_) => panic!(),
                     None => None,
                 });
@@ -207,7 +191,6 @@ impl TagFormat {
         match *self {
             TagFormat::VersionOnly => VERSION_ONLY,
             TagFormat::NameVersion => NAME_VERSION,
-            TagFormat::Skip => SKIP,
         }
     }
 }
@@ -295,9 +278,6 @@ mod toml {
 
         /// Whether or not the package should be taged on release.
         pub tag: Option<bool>,
-
-        /// How to format package git tags.
-        pub tag_format: Option<String>,
 
         /// `true` when a changelog is maintained for the package.
         pub changelog: Option<bool>,

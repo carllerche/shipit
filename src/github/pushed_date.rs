@@ -31,7 +31,7 @@ where
 
     let query = format!(r##"
         query {{
-            repository(owner: {}, name: {}) {{
+            repository(owner: {:?}, name: {:?}) {{
                 {}
             }}
         }}"##, repo.owner, repo.name, fragments);
@@ -44,8 +44,9 @@ where
         .data
         .repository
         .values()
+        .filter(|r| r.is_some())
         .map(|r| {
-            r.target.pushedDate
+            r.as_ref().unwrap().target.pushedDate
         })
         .collect();
 
@@ -66,7 +67,7 @@ struct Response {
 
 #[derive(Debug, Deserialize)]
 struct Data {
-    repository: HashMap<String, Ref>,
+    repository: HashMap<String, Option<Ref>>,
 }
 
 #[derive(Debug, Deserialize)]

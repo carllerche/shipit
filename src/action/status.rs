@@ -41,7 +41,7 @@ pub fn run(workspace: &Workspace, config: &Config) {
     // Iterate over all packages managed by shipit.
     for (name, package_config) in &config.project.packages {
         // Get the workspace package.
-        // let package = workspace.get_member(name).unwrap();
+        let package = workspace.get_member(name).unwrap();
 
         // Get list of published versions
         let mut published = cargo::published_versions(name);
@@ -57,9 +57,6 @@ pub fn run(workspace: &Workspace, config: &Config) {
         // Next, find the last published ref. This is used as the starting point
         // to determine if there are unpublished changes
         match package_config.tag_format {
-            Some(TagFormat::Skip) => {
-                unimplemented!("package={}", name);
-            }
             Some(tag_format) => {
                 // TODO: Validate that tags exist for all published versions'
 
@@ -81,7 +78,22 @@ pub fn run(workspace: &Workspace, config: &Config) {
                     // This is the initial commit
                 }
             }
-            _ => unimplemented!(),
+            _ => {
+                // Releases are not tagged.
+                assert!(published.len() <= 1, "crates already published");
+                match published.first() {
+                    Some(v) if v < package.manifest_version() => unimplemented!(),
+                    _ => {}
+                }
+
+                let initial_sha = match package_config.initial_managed_sha {
+                    Some(sha) => sha,
+                    _ => panic!("no initial sha specified; name={}", name),
+                };
+
+                let initial_sha = package_config.initial_managed_sha.expect("no initial sha specified");
+                last_release_refs.push(git::Ref::Sha(initial_sha));
+            }
         }
     }
 

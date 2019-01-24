@@ -109,6 +109,10 @@ impl Repository {
             Err(_) => return false,
         };
 
+        if descendant_id == ancestor_id {
+            return true;
+        }
+
         self.inner
             .graph_descendant_of(descendant_id, ancestor_id)
             .unwrap()
@@ -200,7 +204,6 @@ pub fn tag_for(name: &str, version: &Version, format: TagFormat) -> String {
     match format {
         TagFormat::VersionOnly => format!("v{}", version),
         TagFormat::NameVersion => format!("{}-{}", name, version),
-        TagFormat::Skip => panic!("TagFormat is skip"),
     }
 }
 
