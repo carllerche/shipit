@@ -53,8 +53,6 @@ impl History {
                 terminal);
         }
 
-        println!("TERMINALS = {:#?}", terminals);
-
         let mut terminals = terminals.to_vec();
 
         // Find the oldest push date. This is used to limit the number of pull
@@ -99,6 +97,7 @@ impl History {
                 let pull = pulls
                     .iter()
                     .find(|pull| {
+                        println!("ID = {:?}", git_commit.id());
                         git_commit.id() == pull.as_ref().unwrap().merge_commit
                     });
 
@@ -118,6 +117,10 @@ impl History {
                     reached_terminal |= matches;
                     !matches
                 });
+
+                if git_commit.parent_count() == 0 {
+                    continue;
+                }
 
                 let parent = git_commit.parent(0).unwrap();
 

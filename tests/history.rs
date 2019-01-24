@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use shipit::History;
 use serde_json::json;
 
@@ -6,8 +7,12 @@ use self::support::*;
 
 #[test]
 fn smoke() {
+    let now = Utc::now();
+
     let mut git = git::Builder::new();
-    git.initial_commit();
+    let sha = git.initial_commit();
+
+    println!("UPDATED_AT = {}", now.to_string());
 
     let github = github::Builder::new()
         .response(json!({
@@ -15,6 +20,16 @@ fn smoke() {
                 "repository": {
                     "pullRequests": {
                         "edges": [
+                            {
+                                "cursor": "foo",
+                                "node": {
+                                    "number": 1,
+                                    "updatedAt": now.to_string(),
+                                    "mergeCommit": {
+                                        "oid": sha.to_string(),
+                                    }
+                                }
+                            }
                         ],
                         "pageInfo": {
                             "hasNextPage": false,

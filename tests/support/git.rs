@@ -58,25 +58,23 @@ impl Builder {
         self.write(path, &self.count.to_string())
     }
 
-    pub fn commit(&mut self, message: &str) -> &mut Self {
-        {
-            let oid = self.index.write_tree().unwrap();
-            let tree = self.repo.find_tree(oid).unwrap();
-            let sig = git2::Signature::now("John Smith", "john@example.com").unwrap();
+    pub fn commit(&mut self, message: &str) -> Ref {
+        let oid = self.index.write_tree().unwrap();
+        let tree = self.repo.find_tree(oid).unwrap();
+        let sig = git2::Signature::now("John Smith", "john@example.com").unwrap();
 
-            self.repo.commit(
-                Some("refs/heads/master"),
-                &sig,
-                &sig,
-                "Initial commit",
-                &tree,
-                &[]).unwrap();
-        }
+        let oid = self.repo.commit(
+            Some("refs/heads/master"),
+            &sig,
+            &sig,
+            "Initial commit",
+            &tree,
+            &[]).unwrap();
 
-        self
+        Ref::Sha(oid)
     }
 
-    pub fn initial_commit(&mut self) -> &mut Self {
+    pub fn initial_commit(&mut self) -> Ref {
         self
             .write("Cargo.toml", &manifest("example", "0.1.0"))
             .touch("src/lib.rs")
