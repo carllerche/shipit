@@ -14,3 +14,5 @@ pub use crate::config::Config;
 pub use crate::history::History;
 pub use crate::package::Package;
 pub use crate::workspace::Workspace;
+
+pub type Error = Box<dyn ::std::error::Error + Send + Sync>;

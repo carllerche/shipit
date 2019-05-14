@@ -1,7 +1,9 @@
 use fs_extra::dir::{self, CopyOptions};
 use git2::{self, Repository};
 use tempdir::TempDir;
-use shipit::Workspace;
+use shipit::{Config, Workspace};
+use std::fs::File;
+use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -75,37 +77,30 @@ pub fn template(template: &str) -> Fixture {
     }
 }
 
-/*
 impl Fixture {
-    pub fn build(self) -> Fixture {
-        let template = self.template_path();
-        let dir = TempDir::new("shipit-tests").unwrap();
-
-        let opts = CopyOptions {
-            copy_inside: true,
-            .. CopyOptions::new()
-        };
-
-        let path = dir.path().join("workspace");
-
-        dir::copy(&template, &path, &opts).unwrap();
-
-        Fixture { dir, path }
-    }
-
-    fn template_path(&self) -> PathBuf {
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join(format!("tests/fixtures/{}", self.template))
-    }
-}
-*/
-
-impl Fixture {
+    /// Return the path to the workspace root
     pub fn path(&self) -> &Path {
         &self.path
     }
 
+    /// Return the workspace
     pub fn workspace(&self) -> Workspace {
         Workspace::load(&self.path)
+    }
+
+    /// Return the workspace configuration
+    pub fn config(&self) -> Result<Config, shipit::Error> {
+        Config::load(&self.workspace())
+    }
+
+    /// Write a file
+    pub fn write_file<P>(&self, path: P, contents: &str)
+    where
+        P: AsRef<Path>,
+    {
+        let path = self.path.join(path);
+        let mut file = File::create(&path).unwrap();
+
+        file.write_all(contents.as_bytes()).unwrap();
     }
 }

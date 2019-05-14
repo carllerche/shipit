@@ -4,6 +4,7 @@ mod support;
 use self::support::*;
 
 #[test]
+#[ignore]
 fn basic_crate() {
     let fixture = fixture::template("basic_manifest");
     let workspace = fixture.workspace();
@@ -18,6 +19,9 @@ fn basic_crate() {
 
     [git]\n\
     tag-format = \"version\"\n\n\
+
+    [packages]\n\
+    basic-manifest\n\n\
 
     [packages.basic-manifest]\n\
     managed-version = \"0.1.0\"\n\

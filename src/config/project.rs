@@ -1,7 +1,5 @@
-use super::LoadError;
-
-use crate::changelog;
-use crate::Workspace;
+use crate::{Error, Workspace};
+use crate::config::{error, TagFormat};
 
 use git2;
 use semver::Version;
@@ -13,132 +11,97 @@ use std::path::{Path, PathBuf};
 /// Project specific configuration specified by a `.shipit.yml` file.
 #[derive(Debug, Default)]
 pub struct Project {
+    /// Packages managed by `shipit`.
     pub packages: HashMap<String, Package>,
+
+    /// How to format git tags
+    pub tag_format: TagFormat,
+
+    /// Git SHA at which `shipit` begins managing the release process.
+    pub initial_commit: Option<git2::Oid>,
 }
 
 /// Package configuration
 #[derive(Debug)]
 pub struct Package {
-    /// Crate version at which `shipit` begins managing the release process.
-    ///
-    /// Any version prior to this will be ignored.
-    pub initial_managed_version: Option<Version>,
-
-    /// Git SHA at which `shipit` begins managing the release process.
-    ///
-    /// This is used when releases are not tracked with tags.
-    pub initial_managed_sha: Option<git2::Oid>,
-
+    /*
     /// `Some` when releases are tagged.
     pub tag_format: Option<TagFormat>,
 
     /// Path to changelog, `None` if no changelog is maintained
     pub changelog: Option<PathBuf>,
+    */
 }
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub enum TagFormat {
-    /// Example: `v0.1.1`
-    VersionOnly,
-
-    /// Example: `tokio-0.1.1`
-    NameVersion,
-}
-
-/// String representation of `TagFormat::VersionOnly`.
-const VERSION_ONLY: &str = "version";
-
-/// String representation of `TagFormat::NameVersion`.
-const NAME_VERSION: &str = "name-version";
 
 impl Project {
-    pub const DEFAULT_FILE_NAME: &'static str = ".shipit.toml";
+    pub const DEFAULT_FILE_NAME: &'static str = "shipit.toml";
 
-    pub fn load(workspace: &Workspace) -> Result<Project, LoadError> {
+    pub fn load(workspace: &Workspace) -> Result<Project, Error> {
         let file = workspace.root().join(Project::DEFAULT_FILE_NAME);
         let toml = load_file(&file)?;
 
+        let packages = toml
+            .packages
+            .into_iter()
+            .map(|package| (package, Package { }))
+            .collect();
+
+        let tag_format: TagFormat = toml
+            .git
+            .tag_format
+            .parse()?;
+
+        let initial_commit = None;
+
         let mut project = Project {
-            packages: HashMap::new(),
+            packages,
+            tag_format,
+            initial_commit,
         };
 
-        for member in workspace.members() {
-            if !toml.packages.contains_key(member.name()) {
-                continue;
-            }
-
-            project.packages.insert(
-                member.name().to_string(),
-                Package::load(member.name(), &toml),
-            );
-        }
+        project.check(workspace)?;
 
         Ok(project)
     }
 
-    pub fn to_string(&self) -> Result<String, Box<::std::error::Error>> {
+    pub fn check(&self, workspace: &Workspace) -> Result<(), Error> {
+        if !self.tag_format.includes_name() {
+            if self.packages.len() > 1 {
+                return Err(error::InvalidTagFormat.into());
+            }
+        }
+
+        for package in self.packages.keys() {
+            if !workspace.get_member(package).is_some() {
+                return Err(error::UnknownPackage::new(package).into());
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn to_string(&self) -> Result<String, Error> {
         use std::fmt::Write;
 
         let mut out = String::new();
 
-        // All changelog fields must be the default value
-        assert!(
-            self.packages.values().all(|package| {
-                // Fun
-                package.changelog.as_ref().map(|p| p.as_ref())
-                    == Some(Path::new(changelog::DEFAULT_FILE_NAME))
-            }),
-            "unimplemented: customized changelog configuration"
-        );
-
-        let tag_format = self.packages.values()
-            .filter(|package| package.tag_format.is_some())
-            .next()
-            .map(|package| {
-                // Ensure all packages use the same format
-                assert!(self.packages.values().all(|p| {
-                    p.tag_format.is_none() || p.tag_format == package.tag_format
-                }));
-
-                package.tag_format.unwrap()
-            });
-
-        let mut out = "# Automated CHANGELOG management\n\
-                       [changelog]\n\n"
-            .to_string();
-
-        if let Some(tag_format) = tag_format {
-            writeln!(out, "[git]")?;
-            writeln!(out, "tag-format = {:?}", tag_format.as_str())?;
-        }
+        writeln!(out, "packages = [")?;
 
         let mut names: Vec<&str> = self.packages.keys().map(|s| &s[..]).collect();
-
         names.sort();
 
         for name in &names {
-            let package = &self.packages[*name];
+            writeln!(out, "  {:?},", name)?;
+        }
 
-            let include =
-                package.initial_managed_version.is_some() ||
-                package.initial_managed_sha.is_some();
+        writeln!(out, "]")?;
+        writeln!(out, "")?;
 
-            if include {
-                writeln!(out, "")?;
-                writeln!(out, "[packages.{}]", name)?;
+        writeln!(out, "[git]")?;
+        writeln!(out, "tag-format = \"{}\"", self.tag_format)?;
 
-                if package.tag_format.is_none() {
-                    writeln!(out, "tag = false")?;
-                }
-
-                if let Some(ref initial_version) = package.initial_managed_version {
-                    writeln!(out, "managed-version = \"{}\"", initial_version)?;
-                }
-
-                if let Some(ref initial_sha) = package.initial_managed_sha {
-                    writeln!(out, "managed-sha = \"{}\"", initial_sha)?;
-                }
-            }
+        if let Some(ref initial_commit) = self.initial_commit {
+            writeln!(out, "initial-commit = \"{}\"", initial_commit)?;
         }
 
         Ok(out)
@@ -146,10 +109,11 @@ impl Project {
 }
 
 impl Package {
+    /*
     fn load(name: &str, toml: &toml::Project) -> Package {
         let package_toml = toml.packages.get(name);
 
-        let initial_managed_version = package_toml.and_then(|p| p.managed_version.clone());
+        // let initial_managed_version = package_toml.and_then(|p| p.managed_version.clone());
 
         // Get the workspace global tag format
         let mut tag_format =
@@ -167,60 +131,20 @@ impl Package {
             tag_format = None;
         }
 
-        let initial_managed_sha = package_toml
+        let initial_commit = package_toml
             .and_then(|p| p.managed_sha.as_ref())
             .map(|sha| sha.parse().unwrap());
 
         Package {
-            initial_managed_version,
-            initial_managed_sha,
+            initial_commit,
             tag_format,
             changelog: None,
         }
     }
+    */
 }
 
-impl TagFormat {
-    pub fn all() -> &'static [TagFormat] {
-        use self::TagFormat::*;
-
-        &[NameVersion, VersionOnly]
-    }
-
-    pub fn as_str(&self) -> &str {
-        match *self {
-            TagFormat::VersionOnly => VERSION_ONLY,
-            TagFormat::NameVersion => NAME_VERSION,
-        }
-    }
-}
-
-impl LoadError {
-    pub fn is_not_found(&self) -> bool {
-        match *self {
-            LoadError::NotFound => true,
-        }
-    }
-}
-
-impl From<io::Error> for LoadError {
-    fn from(src: io::Error) -> LoadError {
-        use std::io::ErrorKind::*;
-
-        match src.kind() {
-            NotFound => LoadError::NotFound,
-            _ => unimplemented!(),
-        }
-    }
-}
-
-impl From<toml::de::Error> for LoadError {
-    fn from(src: toml::de::Error) -> LoadError {
-        unimplemented!("error = {:?}", src);
-    }
-}
-
-pub fn load_file(path: &Path) -> Result<toml::Project, LoadError> {
+pub fn load_file(path: &Path) -> Result<toml::Project, Error> {
     use std::fs::File;
     use std::io::prelude::*;
 
@@ -244,13 +168,15 @@ mod toml {
     #[derive(Debug, Deserialize)]
     pub struct Project {
         /// Global git configuration values
-        pub git: Option<Git>,
+        pub git: Git,
 
+        /*
         /// Global changelog configuration values
         pub changelog: Option<Changelog>,
+        */
 
         /// Package specific configuration
-        pub packages: HashMap<String, Package>,
+        pub packages: Vec<String>,
     }
 
     /// Global git configuration values
@@ -258,9 +184,13 @@ mod toml {
     #[serde(rename_all = "kebab-case")]
     pub struct Git {
         /// How to format git tags
-        pub tag_format: Option<String>,
+        pub tag_format: String,
+
+        /// First commit from which `shipit` is managing the project.
+        pub initial_commit: Option<String>,
     }
 
+    /*
     /// Global changelog configuration values
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "kebab-case")]
@@ -282,4 +212,5 @@ mod toml {
         /// `true` when a changelog is maintained for the package.
         pub changelog: Option<bool>,
     }
+    */
 }

@@ -1,4 +1,3 @@
-use crate::config::TagFormat;
 use crate::{Package, Workspace};
 
 use git2;
@@ -200,12 +199,14 @@ impl Repository {
     }
 }
 
+/*
 pub fn tag_for(name: &str, version: &Version, format: TagFormat) -> String {
     match format {
         TagFormat::VersionOnly => format!("v{}", version),
         TagFormat::NameVersion => format!("{}-{}", name, version),
     }
 }
+*/
 
 impl FileSet {
     fn new(files: Vec<PathBuf>) -> FileSet {

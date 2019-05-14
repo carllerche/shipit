@@ -21,6 +21,7 @@ slog-term = "2.4.0"
 slog-async = "2.3.0"
 
 [dev-dependencies]
+assertive = { git = "https://github.com/carllerche/assertive" }
 tempdir = "0.3.7"
 fs_extra = "1.1.0"
 walkdir = "2.2.7"

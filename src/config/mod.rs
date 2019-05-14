@@ -1,11 +1,15 @@
+pub mod error;
 mod project;
 mod system;
+mod tag;
 
-pub use self::project::{Package, Project, TagFormat};
+pub use self::project::{Package, Project};
 pub use self::system::System;
+pub use self::tag::TagFormat;
 
-use crate::Workspace;
+use crate::{Error, Workspace};
 
+#[derive(Debug)]
 pub struct Config {
     /// Project level configuration
     pub project: Project,
@@ -14,13 +18,8 @@ pub struct Config {
     pub system: System,
 }
 
-#[derive(Debug)]
-pub enum LoadError {
-    NotFound,
-}
-
 impl Config {
-    pub fn load(workspace: &Workspace) -> Result<Config, LoadError> {
+    pub fn load(workspace: &Workspace) -> Result<Config, Error> {
         Ok(Config {
             project: Project::load(workspace)?,
             system: System::load(),
