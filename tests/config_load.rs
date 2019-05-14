@@ -9,8 +9,11 @@ fn single_crate_manifest() {
 
     fixture.write_file("shipit.toml", "\
     packages = [\n\
-        \"basic-manifest\",
-    ]\
+        \"basic-manifest\",\n\
+    ]\n\n\
+
+    [git]\n\
+    tag-format = \"v{version}\"\
     ");
 
     let config = assert_ok!(fixture.config());

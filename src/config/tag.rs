@@ -164,28 +164,28 @@ mod test {
     #[test]
     fn version_only() {
         let f: TagFormat = assert_ok!("{version}".parse());
-        assert_eq!("0.2.3", f.format("hello", "0.2.3"));
+        assert_eq!("0.2.3", f.format("hello", &"0.2.3"));
         assert!(!f.includes_name());
     }
 
     #[test]
     fn prefix_version() {
         let f: TagFormat = assert_ok!("v{version}".parse());
-        assert_eq!("v0.2.3", f.format("hello", "0.2.3"));
+        assert_eq!("v0.2.3", f.format("hello", &"0.2.3"));
         assert!(!f.includes_name());
     }
 
     #[test]
     fn suffix_version() {
         let f: TagFormat = assert_ok!("{version}-final".parse());
-        assert_eq!("0.2.3-final", f.format("hello", "0.2.3"));
+        assert_eq!("0.2.3-final", f.format("hello", &"0.2.3"));
         assert!(!f.includes_name());
     }
 
     #[test]
     fn name_version() {
         let f: TagFormat = assert_ok!("{name}-{version}".parse());
-        assert_eq!("hello-0.2.3", f.format("hello", "0.2.3"));
+        assert_eq!("hello-0.2.3", f.format("hello", &"0.2.3"));
         assert!(f.includes_name());
     }
 }
