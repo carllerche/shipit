@@ -13,7 +13,11 @@ pub fn read_file<P: AsRef<Path>>(path: P) -> String {
 
     let mut file = match File::open(path.as_ref()) {
         Ok(f) => f,
-        Err(e) => panic!("failed to open file; path = {:?}; err={:?}", path.as_ref(), e),
+        Err(e) => panic!(
+            "failed to open file; path = {:?}; err={:?}",
+            path.as_ref(),
+            e
+        ),
     };
 
     let mut contents = String::new();

@@ -13,7 +13,9 @@ fn basic_crate() {
 
     let config = read_file(fixture.path().join(".shipit.toml"));
 
-    assert_eq!(config, "\
+    assert_eq!(
+        config,
+        "\
     # Automated CHANGELOG management\n\
     [changelog]\n\n\
 
@@ -25,5 +27,6 @@ fn basic_crate() {
 
     [packages.basic-manifest]\n\
     managed-version = \"0.1.0\"\n\
-    ");
+    "
+    );
 }

@@ -119,8 +119,7 @@ impl Repository {
     pub fn find_commit(&self, oid: &Ref) -> Result<git2::Commit, Error> {
         let oid = self.deref(oid)?;
 
-        self.inner.find_commit(oid)
-            .map_err(Into::into)
+        self.inner.find_commit(oid).map_err(Into::into)
     }
 
     pub fn commits_in_range<'a>(
@@ -265,15 +264,12 @@ impl fmt::Display for Ref {
         use self::Ref::*;
 
         match *self {
-            Remote { ref remote, ref name } => {
-                write!(fmt, "refs/remotes/{}/{}", remote, name)
-            }
-            Head(ref name) => {
-                write!(fmt, "refs/heads/{}", name)
-            }
-            Tag(ref name) => {
-                write!(fmt, "refs/tags/{}", name)
-            }
+            Remote {
+                ref remote,
+                ref name,
+            } => write!(fmt, "refs/remotes/{}/{}", remote, name),
+            Head(ref name) => write!(fmt, "refs/heads/{}", name),
+            Tag(ref name) => write!(fmt, "refs/tags/{}", name),
             Sha(oid) => write!(fmt, "{}", oid),
         }
     }
@@ -291,7 +287,7 @@ impl PartialEq<git2::Oid> for Ref {
 impl serde::Serialize for Ref {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         self.to_string().serialize(serializer)
     }

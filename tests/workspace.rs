@@ -13,6 +13,5 @@ fn basic_manifest() {
 }
 
 fn path(name: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join(format!("tests/fixtures/{}", name))
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("tests/fixtures/{}", name))
 }

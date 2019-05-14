@@ -44,9 +44,7 @@ impl Client {
         Client { http }
     }
 
-    pub fn associated_prs(&self, repo: &RepositoryId, commits: &[git2::Oid])
-        -> Result<(), Error>
-    {
+    pub fn associated_prs(&self, repo: &RepositoryId, commits: &[git2::Oid]) -> Result<(), Error> {
         pulls::query(&self.http, repo, commits)
     }
 }
@@ -55,7 +53,8 @@ impl RepositoryId {
     pub fn from_url(url: &Url) -> RepositoryId {
         assert_eq!(url.host(), Some(Host::Domain("github.com")));
 
-        let segments: Vec<_> = url.path_segments()
+        let segments: Vec<_> = url
+            .path_segments()
             .expect("invalid Github repository URL")
             .collect();
 

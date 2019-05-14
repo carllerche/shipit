@@ -1,5 +1,5 @@
-use crate::{Error, Workspace};
 use crate::config::{error, TagFormat};
+use crate::{Error, Workspace};
 
 use git2;
 use std::collections::HashMap;
@@ -22,13 +22,12 @@ pub struct Project {
 #[derive(Debug)]
 pub struct Package {
     /*
-    /// `Some` when releases are tagged.
-    pub tag_format: Option<TagFormat>,
+/// `Some` when releases are tagged.
+pub tag_format: Option<TagFormat>,
 
-    /// Path to changelog, `None` if no changelog is maintained
-    pub changelog: Option<PathBuf>,
-    */
-}
+/// Path to changelog, `None` if no changelog is maintained
+pub changelog: Option<PathBuf>,
+*/}
 
 impl Project {
     pub const DEFAULT_FILE_NAME: &'static str = "shipit.toml";
@@ -40,13 +39,10 @@ impl Project {
         let packages = toml
             .packages
             .into_iter()
-            .map(|package| (package, Package { }))
+            .map(|package| (package, Package {}))
             .collect();
 
-        let tag_format: TagFormat = toml
-            .git
-            .tag_format
-            .parse()?;
+        let tag_format: TagFormat = toml.git.tag_format.parse()?;
 
         let initial_commit = None;
 
@@ -168,7 +164,6 @@ mod toml {
         /// Global changelog configuration values
         pub changelog: Option<Changelog>,
         */
-
         /// Package specific configuration
         pub packages: Vec<String>,
     }

@@ -65,13 +65,9 @@ impl Workspace {
                     .insert(package.name().to_string(), package);
             }
         } else {
-            let package = manifest.package
-                .as_ref()
-                .expect("expected package section");
+            let package = manifest.package.as_ref().expect("expected package section");
 
-            let package = Package::new(
-                package.clone(),
-                Path::new(""));
+            let package = Package::new(package.clone(), Path::new(""));
 
             workspace
                 .members

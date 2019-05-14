@@ -1,5 +1,5 @@
-use shipit::{action, Config, Workspace};
 use clap::{App, Arg, SubCommand};
+use shipit::{action, Config, Workspace};
 use std::path::Path;
 
 fn main() {

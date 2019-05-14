@@ -1,6 +1,6 @@
-use crate::{Config, Workspace};
 use crate::cargo;
 use crate::git;
+use crate::{Config, Workspace};
 use std::collections::HashMap;
 
 /*

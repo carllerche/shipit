@@ -21,10 +21,9 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
 
     // Start by loading the initial version
     for member in workspace.members() {
-        config.packages.insert(
-            member.name().to_string(),
-            config::Package {},
-        );
+        config
+            .packages
+            .insert(member.name().to_string(), config::Package {});
     }
 
     if workspace.members().len() == 1 {
@@ -40,7 +39,11 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
     file.write_all(out.as_bytes()).unwrap();
 }
 
-fn detect_tag_format(workspace: &Workspace, repository: &git::Repository, config: &mut config::Project) {
+fn detect_tag_format(
+    workspace: &Workspace,
+    repository: &git::Repository,
+    config: &mut config::Project,
+) {
     let member = &workspace.members().next().unwrap();
 
     let mut published = cargo::published_versions(member.name());
@@ -54,11 +57,10 @@ fn detect_tag_format(workspace: &Workspace, repository: &git::Repository, config
             None => unimplemented!("tags but no releases"),
         };
 
-        let format = config::TagFormat::common()
-            .find(|format| {
-                let tag = format.format(member.name(), last_release);
-                repository.tags().contains(&tag)
-            });
+        let format = config::TagFormat::common().find(|format| {
+            let tag = format.format(member.name(), last_release);
+            repository.tags().contains(&tag)
+        });
 
         if let Some(format) = format {
             config.tag_format = format;

@@ -3,9 +3,11 @@ use crate::github::Error;
 
 // use std::collections::HashMap;
 
-pub fn query(_client: &reqwest::Client, _repo: &super::RepositoryId, _commits: &[git2::Oid])
-    -> Result<(), Error>
-{
+pub fn query(
+    _client: &reqwest::Client,
+    _repo: &super::RepositoryId,
+    _commits: &[git2::Oid],
+) -> Result<(), Error> {
     unimplemented!();
     /*
     // Build the fragments

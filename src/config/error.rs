@@ -23,7 +23,9 @@ pub struct UnknownPackage {
 
 impl UnknownPackage {
     pub fn new(name: &str) -> UnknownPackage {
-        UnknownPackage { name: name.to_string() }
+        UnknownPackage {
+            name: name.to_string(),
+        }
     }
 }
 
@@ -33,8 +35,7 @@ impl fmt::Display for UnknownPackage {
     }
 }
 
-impl Error for UnknownPackage {
-}
+impl Error for UnknownPackage {}
 
 #[derive(Debug)]
 pub struct InvalidTagFormat;

@@ -1,10 +1,10 @@
 use fs_extra::dir::{self, CopyOptions};
 use git2::{self, Repository};
-use tempdir::TempDir;
 use shipit::{Config, Workspace};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+use tempdir::TempDir;
 use walkdir::WalkDir;
 
 pub struct Fixture {
@@ -21,15 +21,14 @@ pub struct Fixture {
 }
 
 pub fn template(template: &str) -> Fixture {
-    let src = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join(format!("tests/fixtures/{}", template));
+    let src = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("tests/fixtures/{}", template));
 
     let tempdir = TempDir::new("shipit-tests").unwrap();
     let path = tempdir.path().join("workspace");
 
     let opts = CopyOptions {
         copy_inside: true,
-        .. CopyOptions::new()
+        ..CopyOptions::new()
     };
 
     dir::copy(&src, &path, &opts).unwrap();
@@ -40,7 +39,8 @@ pub fn template(template: &str) -> Fixture {
 
     // Configure the remote
     repo.remote_add_fetch("origin", "refs/*:refs/*").unwrap();
-    repo.remote_set_url("origin", "https://github.com/example/test").unwrap();
+    repo.remote_set_url("origin", "https://github.com/example/test")
+        .unwrap();
 
     // Add all the files
     for entry in WalkDir::new(&path) {
@@ -66,7 +66,9 @@ pub fn template(template: &str) -> Fixture {
             &sig,
             "Initial commit",
             &tree,
-            &[]).unwrap();
+            &[],
+        )
+        .unwrap();
     }
 
     Fixture {

@@ -20,10 +20,7 @@ impl TagFormat {
         use Segment::*;
 
         TagFormat {
-            segments: vec![
-                Literal("v".to_string()),
-                Version,
-            ],
+            segments: vec![Literal("v".to_string()), Version],
         }
     }
 
@@ -32,11 +29,7 @@ impl TagFormat {
         use Segment::*;
 
         TagFormat {
-            segments: vec![
-                Name,
-                Literal("-".to_string()),
-                Version,
-            ],
+            segments: vec![Name, Literal("-".to_string()), Version],
         }
     }
 
@@ -49,11 +42,10 @@ impl TagFormat {
     pub fn includes_name(&self) -> bool {
         use Segment::Name;
 
-        self.segments.iter()
-            .any(|segment| match segment {
-                Name => true,
-                _ => false,
-            })
+        self.segments.iter().any(|segment| match segment {
+            Name => true,
+            _ => false,
+        })
     }
 
     pub fn format<T: ToString>(&self, name: &str, version: &T) -> String {
@@ -100,7 +92,7 @@ impl FromStr for TagFormat {
                 segments.push(Literal(s[..start_idx].to_string()));
             }
 
-            s = &s[start_idx+1..];
+            s = &s[start_idx + 1..];
 
             let end_idx = match s.find("}") {
                 Some(idx) => idx,
@@ -115,11 +107,12 @@ impl FromStr for TagFormat {
                 _ => unimplemented!(),
             }
 
-            s = &s[end_idx+1..];
+            s = &s[end_idx + 1..];
         }
 
         // Must contain a version
-        let contains_version = segments.iter()
+        let contains_version = segments
+            .iter()
             .find(|seg| match seg {
                 Version => true,
                 _ => false,

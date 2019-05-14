@@ -22,7 +22,8 @@ impl Builder {
         let index = repo.index().unwrap();
 
         repo.remote_add_fetch("origin", "refs/*:refs/*").unwrap();
-        repo.remote_set_url("origin", "https://github.com/example/test").unwrap();
+        repo.remote_set_url("origin", "https://github.com/example/test")
+            .unwrap();
 
         Builder {
             dir,
@@ -63,27 +64,24 @@ impl Builder {
         let tree = self.repo.find_tree(oid).unwrap();
         let sig = git2::Signature::now("John Smith", "john@example.com").unwrap();
 
-        let oid = self.repo.commit(
-            Some("refs/heads/master"),
-            &sig,
-            &sig,
-            message,
-            &tree,
-            &[]).unwrap();
+        let oid = self
+            .repo
+            .commit(Some("refs/heads/master"), &sig, &sig, message, &tree, &[])
+            .unwrap();
 
         Ref::Sha(oid)
     }
 
     pub fn initial_commit(&mut self) -> Ref {
-        self
-            .write("Cargo.toml", &manifest("example", "0.1.0"))
+        self.write("Cargo.toml", &manifest("example", "0.1.0"))
             .touch("src/lib.rs")
             .commit("Initial commit")
     }
 }
 
 fn manifest(name: &str, version: &str) -> String {
-    format!("\
+    format!(
+        "\
 [package]
 name = {:?}
 version = {:?}
@@ -91,5 +89,7 @@ authors = [\"John Smith <jon.smith@example.com>\"]
 edition = \"2018\"
 
 [dependencies]
-", name, version)
+",
+        name, version
+    )
 }
