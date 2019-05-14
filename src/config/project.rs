@@ -2,11 +2,8 @@ use crate::{Error, Workspace};
 use crate::config::{error, TagFormat};
 
 use git2;
-use semver::Version;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Project specific configuration specified by a `.shipit.yml` file.
 #[derive(Debug, Default)]
@@ -53,7 +50,7 @@ impl Project {
 
         let initial_commit = None;
 
-        let mut project = Project {
+        let project = Project {
             packages,
             tag_format,
             initial_commit,
@@ -158,11 +155,8 @@ pub fn load_file(path: &Path) -> Result<toml::Project, Error> {
 }
 
 mod toml {
-    use semver::Version;
     use serde_derive::Deserialize;
     pub use toml::{de, from_slice};
-
-    use std::collections::HashMap;
 
     /// Ship it TOML configuration representation
     #[derive(Debug, Deserialize)]

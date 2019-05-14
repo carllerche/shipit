@@ -15,7 +15,7 @@ fn main() {
         )
         // .subcommand({ SubCommand::with_name("check").about("Check for project compliance") })
         .subcommand({ SubCommand::with_name("init").about("Initialize a project for shipit") })
-        // .subcommand({ SubCommand::with_name("status").about("Show the release status") })
+        .subcommand({ SubCommand::with_name("status").about("Show the release status") })
         .get_matches();
 
     let path = matches.value_of("project-path").unwrap();
@@ -41,12 +41,10 @@ fn main() {
 
             action::init::run(&workspace, config.as_ref().map(|c| &c.project));
         }
-        /*
         ("status", Some(_sub_matches)) => {
-            let config = config.expect(".shipit.toml file missing");
+            let config = config.expect("shipit.toml file missing");
             action::status::run(&workspace, &config);
         }
-        */
         _ => {
             unimplemented!();
         }

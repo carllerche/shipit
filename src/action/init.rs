@@ -1,10 +1,7 @@
 use crate::cargo;
-use crate::changelog;
 use crate::config;
 use crate::git;
 use crate::Workspace;
-
-use semver::Version;
 
 pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
     use std::fs::File;
@@ -39,14 +36,8 @@ pub fn run(workspace: &Workspace, config: Option<&config::Project>) {
     let out = config.to_string().unwrap();
     let path = workspace.root().join(config::Project::DEFAULT_FILE_NAME);
 
-    println!("~~~~~~~~~~~~");
-    println!("{}", out);
-    println!("~~~~~~~~~~~~");
-
-    /*
     let mut file = File::create(&path).unwrap();
     file.write_all(out.as_bytes()).unwrap();
-    */
 }
 
 fn detect_tag_format(workspace: &Workspace, repository: &git::Repository, config: &mut config::Project) {

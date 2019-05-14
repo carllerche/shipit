@@ -1,7 +1,6 @@
 use crate::{Package, Workspace};
 
 use git2;
-use semver::Version;
 use url::{Host, Url};
 
 use std::fmt;

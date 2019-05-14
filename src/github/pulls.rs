@@ -1,94 +1,83 @@
-use super::{DateTime, Transport};
+use crate::github::Error;
+// use serde_derive::{Serialize, Deserialize};
 
-use graphql_client::{GraphQLQuery, Response};
+// use std::collections::HashMap;
 
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "graphql/schema.json",
-    query_path = "graphql/github.graphql",
-    response_derives = "Debug",
-)]
-struct PullRequests;
-
-#[derive(Debug, Clone)]
-pub struct PullRequest {
-    pub number: u64,
-    pub title: String,
-    pub updated_at: DateTime,
-    pub merge_commit: git2::Oid,
-}
-
-pub fn query<'a, T>(client: &'a T, repo: &'a super::RepositoryId)
-    -> impl Iterator<Item = Result<PullRequest, super::Error>> + 'a
-where
-    T: Transport,
+pub fn query(_client: &reqwest::Client, _repo: &super::RepositoryId, _commits: &[git2::Oid])
+    -> Result<(), Error>
 {
-    Iter {
-        client,
-        repo,
-        after: None,
-        done: false,
-    }
-    .flatten()
-}
-
-struct Iter<'a, T> {
-    client: &'a T,
-    repo: &'a super::RepositoryId,
-    after: Option<String>,
-    done: bool,
-}
-
-impl<'a, T> Iterator for Iter<'a, T>
-where
-    T: Transport,
-{
-    type Item = Vec<Result<PullRequest, super::Error>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.done {
-            return None;
-        }
-
-        let q = PullRequests::build_query(pull_requests::Variables {
-            owner: self.repo.owner.clone(),
-            name: self.repo.name.clone(),
-            after: self.after.take(),
+    unimplemented!();
+    /*
+    // Build the fragments
+    let fragments = refs
+        .iter()
+        .enumerate()
+        .map(|(i, r)| {
+            format!(r##"
+                alias_{}: ref(qualifiedName: "{}") {{
+                    target {{
+                        ... on Commit {{
+                            pushedDate
+                        }}
+                    }}
+                }}
+                "##, i, r)
+        })
+        .fold(String::new(), |mut s, frag| {
+            s.push_str(&frag);
+            s
         });
 
-        let response: Response<pull_requests::ResponseData> =
-            match self.client.query(&q) {
-                Ok(response) => response,
-                Err(e) => {
-                    return Some(vec![Err(e.into())]);
-                }
-            };
+    let query = format!(r##"
+        query {{
+            repository(owner: {:?}, name: {:?}) {{
+                {}
+            }}
+        }}"##, repo.owner, repo.name, fragments);
 
-        let pull_requests = response
-            .data.unwrap()
-            .repository.unwrap()
-            .pull_requests;
+    let response: Response = client.query(&Request {
+        query,
+    })?;
 
-        self.done = !pull_requests.page_info.has_next_page;
+    let mut times: Vec<_> = response
+        .data
+        .repository
+        .values()
+        .filter(|r| r.is_some())
+        .map(|r| {
+            r.as_ref().unwrap().target.pushedDate
+        })
+        .collect();
 
-        let mut ret = vec![];
+    times.sort();
 
-        for edge in pull_requests.edges.unwrap() {
-            let edge = edge.unwrap();
-            self.after = Some(edge.cursor);
-
-            let node = edge.node.unwrap();
-
-            ret.push(Ok(PullRequest {
-                number: node.number as u64,
-                title: node.title,
-                updated_at: node.updated_at,
-                merge_commit: node.merge_commit.unwrap().oid.parse().unwrap(),
-            }));
-        }
-
-        Some(ret)
-    }
+    Ok(times[0])
+    */
 }
 
-pub type GitObjectID = String;
+/*
+#[derive(Debug, Serialize)]
+struct Request {
+    query: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Response {
+    data: Data,
+}
+
+#[derive(Debug, Deserialize)]
+struct Data {
+    repository: HashMap<String, Option<Ref>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Ref {
+    target: Target,
+}
+
+#[derive(Debug, Deserialize)]
+struct Target {
+    pushedDate: super::DateTime,
+}
+*/

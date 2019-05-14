@@ -67,7 +67,7 @@ impl Builder {
             Some("refs/heads/master"),
             &sig,
             &sig,
-            "Initial commit",
+            message,
             &tree,
             &[]).unwrap();
 

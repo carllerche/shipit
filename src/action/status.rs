@@ -1,10 +1,7 @@
-use crate::{Config, History, Workspace};
+use crate::{Config, Workspace};
 use crate::cargo;
-use crate::config::TagFormat;
 use crate::git;
-use crate::github;
-
-use git2;
+use std::collections::HashMap;
 
 /*
 /// Unpublished changes
@@ -17,189 +14,71 @@ struct Unpublished {
 }
 */
 
-struct Commit {
-    sha: git2::Oid,
-    modified: git::FileSet,
-}
-
 /// Check a workspace, ensuring it is valid
 pub fn run(workspace: &Workspace, config: &Config) {
     // Initialize a new Github client
-    let github = github::Client::new(&config.system);
+    // let github = github::Client::new(&config.system);
 
     // Open the git repository
-    let mut repository = git::Repository::open(workspace.root());
-
-    // Collect refs for previous releases
-    let mut last_release_refs = vec![];
+    let repository = git::Repository::open(workspace.root());
 
     let remote = git::Ref::Remote {
         remote: "origin".to_string(),
         name: "master".to_string(),
     };
 
-    // Iterate over all packages managed by shipit.
-    for (name, package_config) in &config.project.packages {
-        // Get the workspace package.
-        let package = workspace.get_member(name).unwrap();
-
-        // Get list of published versions
-        let mut published = cargo::published_versions(name);
-
-        // Filter out all versions not managed by shipit
-        if let Some(init_version) = package_config.initial_managed_version.as_ref() {
-            published.retain(|version| version >= init_version);
-        }
-
-        // Sort versions. The latest version is last.
-        published.sort();
-
-        // Next, find the last published ref. This is used as the starting point
-        // to determine if there are unpublished changes
-        match package_config.tag_format {
-            Some(tag_format) => {
-                // TODO: Validate that tags exist for all published versions'
-
-                if let Some(version) = published.last() {
-                    // Generate the tag
-                    let tag_name = git::tag_for(name, version, tag_format);
-                    let tag = git::Ref::Tag(tag_name);
-
-                    // First, ensure that the tag is contained by the master branch
-                    assert!(
-                        repository.is_descendant_of(&remote, &tag),
-                        "tag not in history of branch; tag={}; branch={}",
-                        tag,
-                        remote
-                    );
-
-                    last_release_refs.push(tag);
-                } else {
-                    // This is the initial commit
-                }
-            }
-            _ => {
-                // Releases are not tagged.
-                assert!(published.len() <= 1, "crates already published");
-                match published.first() {
-                    Some(v) if v < package.manifest_version() => unimplemented!(),
-                    _ => {}
-                }
-
-                let initial_sha = match package_config.initial_managed_sha {
-                    Some(sha) => sha,
-                    _ => panic!("no initial sha specified; name={}", name),
-                };
-
-                let initial_sha = package_config.initial_managed_sha.expect("no initial sha specified");
-                last_release_refs.push(git::Ref::Sha(initial_sha));
-            }
-        }
-    }
-
-    let history = History::load(
-        &mut repository,
-        &remote,
-        &last_release_refs[..],
-        &github);
-
-    for commit in history.commits() {
-        let c = repository.find_commit(&git::Ref::Sha(commit.oid)).unwrap();
-        println!("{:#?}", (c.message(), commit));
-    }
-
-
-    /*
     // All commits
     let mut commits = HashMap::new();
 
     // Commits that are relevant to a particular project
     let mut per_package = HashMap::new();
-    */
 
-    /*
     // Iterate over all packages managed by shipit.
-    for (name, package_config) in &config.project.packages {
+    for name in config.project.packages.keys() {
         // Get the workspace package.
         let package = workspace.get_member(name).unwrap();
 
         // Get list of published versions
         let mut published = cargo::published_versions(name);
 
-        // Filter out all versions not managed by shipit
-        if let Some(init_version) = package_config.initial_managed_version.as_ref() {
-            published.retain(|version| version >= init_version);
-        }
-
         // Sort versions. The latest version is last.
         published.sort();
 
         // Next, find the last published ref. This is used as the starting point
         // to determine if there are unpublished changes
-        if let Some(tag_format) = package_config.tag_format {
-            // TODO: Validate that tags exist for all published versions'
 
-            if let Some(version) = published.last() {
-                // Generate the tag
-                let tag_name = git::tag_for(name, version, tag_format);
-                let tag = git::Ref::Tag(&tag_name);
+        if let Some(version) = published.last() {
+            // Generate the tag
+            let tag_name = config.project.tag_format.format(name, version);
+            let tag = git::Ref::Tag(tag_name);
 
-                let remote = git::Ref::Remote {
-                    remote: "origin",
-                    name: "master",
-                };
+            // First, ensure that the tag is contained by the master branch
+            assert!(
+                repository.is_descendant_of(&remote, &tag),
+                "tag not in history of branch"
+            );
 
-                // First, ensure that the tag is contained by the master branch
-                assert!(
-                    repository.is_descendant_of(&remote, &tag),
-                    "tag not in history of branch"
-                );
+            for commit in repository.commits_in_range(&tag, &remote) {
+                let changed_files = commits
+                    .entry(commit)
+                    .or_insert_with(|| repository.files_changed(commit));
 
-                for commit in repository.commits_in_range(&tag, &remote) {
-                    let changed_files = commits
-                        .entry(commit)
-                        .or_insert_with(|| repository.files_changed(commit));
-
-                    println!("    + commit = {}", commit);
-
-                    if changed_files.modifies(package, &workspace) {
-                        println!("      + modifies package");
-
-                        per_package
-                            .entry(package.name())
-                            .or_insert(vec![])
-                            .push(commit);
-                    }
+                if changed_files.modifies(package, &workspace) {
+                    per_package
+                        .entry(package.name())
+                        .or_insert(vec![])
+                        .push(commit);
                 }
-            } else {
-                // This is the initial commit
-                unimplemented!();
             }
-
-            // for version in &published {
-            //     let tag = git::tag_for(member.name(), version, tag_format);
-            //     if !repository.tags().contains(&tag) && *version >= zero_one_zero {
-            //         panic!("missing tag `{}`", tag);
-            //     }
-            // }
-            info!(log, "{}; TODO: identify missing tags here", name)
         } else {
-            warn!(log, "NO TAGGING = {}", name);
+            // This is the initial commit
             unimplemented!();
         }
-
-        // * Get initial supported version.
-        // * Get list of published crates after that
-        // * Ensure tags for each
-        // * If changelog, check format
-
-        /*
-        if member.has_changelog() {
-            member.unpublished(&repository);
-        }
-        */
     }
 
+    println!("{:#?}", per_package);
+
+    /*
     println!("~~~~~~~~~ ZOMG PRS ~~~~~~~~~~");
 
     let prs: Vec<_> = github

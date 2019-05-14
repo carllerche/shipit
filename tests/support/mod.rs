@@ -1,6 +1,8 @@
+#![allow(dead_code)]
+
 pub mod fixture;
 pub mod git;
-pub mod github;
+// pub mod github;
 
 use std::path::Path;
 
@@ -11,7 +13,7 @@ pub fn read_file<P: AsRef<Path>>(path: P) -> String {
 
     let mut file = match File::open(path.as_ref()) {
         Ok(f) => f,
-        Err(e) => panic!("failed to open file; path = {:?}", path.as_ref()),
+        Err(e) => panic!("failed to open file; path = {:?}; err={:?}", path.as_ref(), e),
     };
 
     let mut contents = String::new();

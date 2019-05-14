@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
+/*
 /// The configuration file is not found
 #[derive(Debug)]
 pub struct NotFound;
@@ -12,6 +13,7 @@ impl fmt::Display for NotFound {
 }
 
 impl Error for NotFound {}
+*/
 
 /// A package is listed in the shipit configuration but does not exist in the workspace.
 #[derive(Debug)]

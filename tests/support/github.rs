@@ -1,4 +1,4 @@
-use shipit::github::{Client, Error, Transport};
+use shipit::github::{Client, Error};
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
