@@ -1,6 +1,5 @@
-use crate::cargo;
-use crate::git;
 use crate::{Config, Workspace};
+use crate::{cargo, git, github};
 use std::collections::HashMap;
 
 /*
@@ -17,11 +16,16 @@ struct Unpublished {
 /// Check a workspace, ensuring it is valid
 pub fn run(workspace: &Workspace, config: &Config) {
     // Initialize a new Github client
-    // let github = github::Client::new(&config.system);
+    let github = github::Client::new(&config.system);
 
     // Open the git repository
     let repository = git::Repository::open(workspace.root());
 
+    // Get the GitHub repository
+    let repository_id = github::RepositoryId::from_url(
+        repository.origin_url());
+
+    // The git origin to work with
     let remote = git::Ref::Remote {
         remote: "origin".to_string(),
         name: "master".to_string(),
@@ -75,6 +79,8 @@ pub fn run(workspace: &Workspace, config: &Config) {
             unimplemented!();
         }
     }
+
+    github.associated_prs(&repository_id, commits.keys()).unwrap();
 
     println!("{:#?}", per_package);
 

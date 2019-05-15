@@ -1,16 +1,16 @@
 mod pulls;
 // mod pushed_date;
-// mod transport;
+mod transport;
 
 use crate::config;
+use self::transport::Transport;
 
 use chrono::{self, offset::Utc};
-use reqwest;
 use url::{Host, Url};
 
 /// Issue requests to Github
 pub struct Client {
-    http: reqwest::Client,
+    transport: Transport,
 }
 
 /// How Github represents their date & time.
@@ -26,26 +26,12 @@ pub struct RepositoryId {
 
 impl Client {
     pub fn new(config: &config::System) -> Client {
-        use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-        let mut authentication = HeaderMap::new();
-
-        if let Some(token) = &config.github_token {
-            authentication.insert(
-                HeaderName::from_static("token"),
-                HeaderValue::from_str(token).unwrap(),
-            );
-        }
-
-        let http = reqwest::ClientBuilder::new()
-            .default_headers(authentication)
-            .build()
-            .unwrap();
-
-        Client { http }
+        let transport = Transport::new(config);
+        Client { transport }
     }
 
-    pub fn associated_prs(&self, repo: &RepositoryId, commits: &[git2::Oid]) -> Result<(), Error> {
-        pulls::query(&self.http, repo, commits)
+    pub fn associated_prs<'a>(&self, repo: &RepositoryId, commits: impl Iterator<Item = &'a git2::Oid>) -> Result<(), Error> {
+        pulls::query(&self.transport, repo, commits)
     }
 }
 

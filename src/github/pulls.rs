@@ -1,13 +1,57 @@
-use crate::github::Error;
-// use serde_derive::{Serialize, Deserialize};
+use crate::github::{Error, Transport};
 
-// use std::collections::HashMap;
+use serde_derive::{Serialize, Deserialize};
+use std::collections::HashMap;
 
-pub fn query(
-    _client: &reqwest::Client,
-    _repo: &super::RepositoryId,
-    _commits: &[git2::Oid],
+pub fn query<'a>(
+    transport: &Transport,
+    repo: &super::RepositoryId,
+    commits: impl Iterator<Item = &'a git2::Oid>,
 ) -> Result<(), Error> {
+    use std::fmt::Write;
+
+    let commit_query = commits
+        .enumerate()
+        .fold(String::new(), |mut s, (i, commit)| {
+            write!(s, r##"
+                commit_{}: object(oid: "{}") {{
+                    ... pr
+                }}"##, i, commit).unwrap();
+            s
+        });
+
+
+    let query = format!(r##"
+        query {{
+            repository(owner: {:?}, name: {:?}) {{
+                {}
+            }}
+        }}
+
+        fragment pr on Commit {{
+            associatedPullRequests(first:5) {{
+                edges {{
+                    node {{
+                        number
+                        title
+                        labels(first:5) {{
+                            edges {{
+                                node {{
+                                    name,
+                                }}
+                            }}
+                        }}
+                    }}
+                }}
+            }}
+        }}"##, repo.owner, repo.name, commit_query);
+
+    let response: Response = transport.query(&Request {
+        query,
+    })?;
+
+    println!("{:#?}", response);
+
     unimplemented!();
     /*
     // Build the fragments
@@ -57,7 +101,6 @@ pub fn query(
     */
 }
 
-/*
 #[derive(Debug, Serialize)]
 struct Request {
     query: String,
@@ -70,9 +113,34 @@ struct Response {
 
 #[derive(Debug, Deserialize)]
 struct Data {
-    repository: HashMap<String, Option<Ref>>,
+    // repository: HashMap<String, HashMap<String, serde_json::Value>>,
+    repository: HashMap<String, Commit>,
 }
 
+#[derive(Debug, Deserialize)]
+struct Commit {
+    associatedPullRequests: AssociatedPullRequests,
+}
+
+#[derive(Debug, Deserialize)]
+struct AssociatedPullRequests {
+    // edges: serde_json::Value,
+    edges: Vec<AssociatedPullRequest>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AssociatedPullRequest {
+    node: serde_json::Value,
+    // node: PullRequest,
+}
+
+#[derive(Debug, Deserialize)]
+struct PullRequest {
+    number: u64,
+    title: String,
+}
+
+/*
 #[derive(Debug, Deserialize)]
 struct Ref {
     target: Target,

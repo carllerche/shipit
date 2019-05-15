@@ -5,17 +5,14 @@ use serde::{Serialize};
 use serde::de::DeserializeOwned;
 use std::fmt;
 
-pub trait Transport {
-    fn query<T, U>(&self, query: &T) -> Result<U, Error>
-    where
-        T: Serialize + fmt::Debug,
-        U: DeserializeOwned;
+pub struct Transport {
+    http: reqwest::Client,
 }
 
 const QUERY_URL: &str = "https://api.github.com/graphql";
 
-impl super::Client<reqwest::Client> {
-    pub fn new(config: &config::System) -> super::Client {
+impl Transport {
+    pub fn new(config: &config::System) -> Transport {
         use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 
         let mut authorization = HeaderMap::new();
@@ -32,19 +29,18 @@ impl super::Client<reqwest::Client> {
             .build()
             .unwrap();
 
-        super::Client {
-            transport: http
+        Transport {
+            http: http
         }
     }
-}
 
-impl Transport for reqwest::Client {
-    fn query<T, U>(&self, query: &T) -> Result<U, Error>
+    pub fn query<T, U>(&self, query: &T) -> Result<U, Error>
     where
         T: Serialize + fmt::Debug,
         U: DeserializeOwned
     {
         let mut response = self
+            .http
             .post(QUERY_URL)
             .json(&query)
             .send()?;
